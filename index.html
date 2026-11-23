@@ -1,0 +1,2117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Robot-Use Agents with LLMs — Paradigm Survey & Benchmark Analysis</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-page: #ffffff;
+      --bg-card: #f6f7f8;
+      --bg-card-hover: #f0f2f4;
+      --border-subtle: #e4e6ea;
+      --border-strong: #d0d4dc;
+      --text-primary: #181a1d;
+      --text-secondary: #565c66;
+      --text-muted: #848b96;
+      --accent: #a31f34;
+      --accent-hover: #821627;
+      --accent-soft: #fbf1f3;
+      --accent-border: #e7c2c8;
+      --charcoal: #3f444c;
+      --slate-bar: #b8bec7;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      font-family: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--text-primary);
+      background: var(--bg-page);
+    }
+
+    .font-mono-code {
+      font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+    }
+
+    .bento-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      transition: border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .bento-card:hover {
+      border-color: var(--border-strong);
+    }
+
+    .bento-white {
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+    }
+
+    .accent-badge {
+      background: var(--accent-soft);
+      color: var(--accent);
+      border: 1px solid var(--accent-border);
+    }
+
+    .neutral-badge {
+      background: #ffffff;
+      color: var(--text-secondary);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .btn-filter {
+      padding: 6px 13px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 500;
+      border: 1px solid var(--border-subtle);
+      background: #ffffff;
+      color: var(--text-secondary);
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+
+    .btn-filter:hover {
+      border-color: var(--charcoal);
+      color: var(--text-primary);
+    }
+
+    .btn-filter.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #ffffff;
+    }
+
+    .tab-btn {
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      background: transparent;
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-primary);
+      background: #eceef1;
+    }
+
+    .tab-btn.active {
+      background: #ffffff;
+      color: var(--accent);
+      border-color: var(--border-subtle);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+
+    /* Chevron flow pills inspired by reference diagram */
+    .flow-pill {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      border-radius: 6px;
+      white-space: nowrap;
+    }
+
+    .collapsible-content {
+      display: none;
+    }
+
+    .collapsible-content.open {
+      display: block;
+    }
+
+    /* Custom subtle scrollbar for wide matrix on small viewports */
+    .table-scroll::-webkit-scrollbar {
+      height: 6px;
+    }
+    .table-scroll::-webkit-scrollbar-track {
+      background: #f1f2f4;
+      border-radius: 999px;
+    }
+    .table-scroll::-webkit-scrollbar-thumb {
+      background: #cfd4dc;
+      border-radius: 999px;
+    }
+
+    .modal-backdrop {
+      background: rgba(24, 26, 29, 0.72);
+      backdrop-filter: blur(4px);
+    }
+  </style>
+</head>
+<body class="bg-white text-[#181a1d] antialiased">
+
+  <!-- Sticky Header -->
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-[#e4e6ea]">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
+      <a href="#top" class="flex items-center gap-2.5 shrink-0">
+        <span class="w-2.5 h-2.5 rounded-sm bg-[#a31f34] inline-block"></span>
+        <span class="font-semibold text-sm sm:text-base tracking-tight text-[#181a1d]">Robot-Use Agents</span>
+        <span class="hidden md:inline-block text-xs font-mono-code text-[#848b96] border-l border-[#e4e6ea] pl-2.5">RUA Survey · 2026</span>
+      </a>
+
+      <nav class="hidden md:flex items-center gap-6 text-sm font-medium text-[#565c66]">
+        <a href="#overview" class="hover:text-[#a31f34] transition-colors" data-i18n="nav_overview">第一部分：文献与范式精读</a>
+        <a href="#part2" class="hover:text-[#a31f34] transition-colors" data-i18n="nav_part2">第二部分：多维结果绘图</a>
+        <a href="#part3" class="hover:text-[#a31f34] transition-colors" data-i18n="nav_part3">第三部分：我们的思路</a>
+      </nav>
+
+      <div class="flex items-center gap-2 shrink-0">
+        <div class="inline-flex items-center p-0.5 rounded-lg bg-[#f2f3f5] border border-[#e4e6ea]" role="group" aria-label="Language Switch">
+          <button id="lang-zh" type="button" class="px-2.5 py-1 text-xs font-semibold rounded-md transition-colors bg-[#181a1d] text-white">中文</button>
+          <button id="lang-en" type="button" class="px-2.5 py-1 text-xs font-semibold rounded-md transition-colors text-[#565c66] hover:text-[#181a1d]">EN</button>
+        </div>
+        <button id="mobile-menu-btn" type="button" class="md:hidden p-1.5 rounded-lg border border-[#e4e6ea] text-[#565c66]" aria-label="Menu">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Nav Drawer -->
+    <div id="mobile-nav" class="hidden md:hidden border-t border-[#e4e6ea] bg-white px-4 py-3 space-y-2 text-sm font-medium text-[#565c66]">
+      <a href="#overview" class="block py-1 hover:text-[#a31f34]" data-i18n="nav_overview">第一部分：文献与范式精读</a>
+      <a href="#part2" class="block py-1 hover:text-[#a31f34]" data-i18n="nav_part2">第二部分：多维结果绘图</a>
+      <a href="#part3" class="block py-1 hover:text-[#a31f34]" data-i18n="nav_part3">第三部分：我们的思路</a>
+    </div>
+  </header>
+
+  <main id="top" class="max-w-6xl mx-auto px-4 sm:px-6 pb-20">
+
+    <!-- HERO & OVERVIEW -->
+    <section id="overview" class="pt-10 sm:pt-14 pb-10">
+      <div class="bento-card p-6 sm:p-9">
+        <div class="flex flex-wrap items-center gap-2 mb-4">
+          <span class="accent-badge text-xs font-mono-code font-semibold px-2.5 py-1 rounded-md">EMBODIED AI · 2026</span>
+          <span class="neutral-badge text-xs font-mono-code px-2.5 py-1 rounded-md" data-i18n="hero_tag2">6 篇核心前沿文献</span>
+          <span class="neutral-badge text-xs font-mono-code px-2.5 py-1 rounded-md" data-i18n="hero_tag3">Sim-to-Real &amp; Agentic Post-Training</span>
+        </div>
+
+        <h1 class="text-2xl sm:text-4xl font-bold tracking-tight text-[#181a1d] leading-tight mb-4" data-i18n="hero_title">
+          Robot-Use Agents with LLMs：范式演进、实证结果与未来方向
+        </h1>
+
+        <p class="text-sm sm:text-base text-[#565c66] leading-relaxed max-w-4xl mb-6" data-i18n="hero_subtitle">
+          在具身智能领域，基于大模型推理与 Agent 闭环控制来驱动仿真训练与真机迁移（Robot-Use Agent, RUA）正成为继端到端 VLA 之后的新兴范式。然而，开源与闭源底座如何选择、Harness 应薄还是厚、RL 后训练与在线自我改进如何权衡，目前尚未形成统一范式。本专题系统拆解 2026 年最具代表性的六篇前沿工作。
+        </p>
+
+        <!-- Minimalist Core Loop Banner (Reference Style) -->
+        <div class="bento-white p-4 sm:px-5 sm:py-4 flex flex-col xl:flex-row xl:items-center justify-between gap-3.5">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-xs font-mono-code uppercase tracking-wider text-[#848b96] mr-1 whitespace-nowrap" data-i18n="loop_label">核心闭环</span>
+            <span class="flow-pill bg-[#3f444c] text-white" data-i18n="loop_1">Observe 感知状态</span>
+            <span class="text-[#a31f34] font-bold">→</span>
+            <span class="flow-pill bg-[#a31f34] text-white" data-i18n="loop_2">Reason 推理 / 编排</span>
+            <span class="text-[#a31f34] font-bold">→</span>
+            <span class="flow-pill bg-[#3f444c] text-white" data-i18n="loop_3">Act 位姿 / 代码 / 工具</span>
+            <span class="text-[#848b96] font-bold">→</span>
+            <span class="flow-pill bg-[#f0f2f4] text-[#181a1d] border border-[#d0d4dc]" data-i18n="loop_4">RL / RSI 反馈演进</span>
+          </div>
+          <div class="flex flex-wrap items-center gap-3.5 text-xs font-mono-code text-[#565c66] shrink-0 pt-2.5 xl:pt-0 border-t xl:border-t-0 border-[#eef0f3]">
+            <span class="whitespace-nowrap"><strong class="text-[#a31f34] text-sm">6</strong> <span data-i18n="stat_papers">篇文献</span></span>
+            <span class="text-[#d0d4dc]">|</span>
+            <span class="whitespace-nowrap"><strong class="text-[#181a1d] text-sm">4B–27B+</strong> <span data-i18n="stat_models">开源/闭源底座</span></span>
+            <span class="text-[#d0d4dc]">|</span>
+            <span class="whitespace-nowrap"><strong class="text-[#181a1d] text-sm">6+</strong> <span data-i18n="stat_bench">仿真与真机基准</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Combined Paper Overview & Expandable Deep Dive (Single Switchable Stage) -->
+      <div id="paper-stage-section" class="mt-7 scroll-mt-20">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div>
+            <h2 class="text-sm sm:text-base font-bold text-[#181a1d]" data-i18n="index_heading">
+              六篇核心文献速览与机制精读
+            </h2>
+
+          </div>
+        </div>
+
+        <div class="bento-white overflow-hidden">
+          <!-- Paper Switcher Bar -->
+          <div class="px-4 sm:px-5 py-3 bg-[#f6f7f8] border-b border-[#e4e6ea] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+            <div id="paper-switcher-tabs" class="inline-flex flex-wrap gap-1.5" role="tablist">
+              <!-- Populated by JS -->
+            </div>
+            <div class="inline-flex items-center gap-1 shrink-0">
+              <button type="button" id="paper-prev-btn" class="w-8 h-8 rounded-lg border border-[#e4e6ea] bg-white text-[#3f444c] hover:border-[#a31f34] hover:text-[#a31f34] flex items-center justify-center text-xs font-bold transition-colors" aria-label="Previous paper">←</button>
+              <span id="paper-page-ind" class="text-xs font-mono-code text-[#848b96] px-1.5">1 / 6</span>
+              <button type="button" id="paper-next-btn" class="w-8 h-8 rounded-lg border border-[#e4e6ea] bg-white text-[#3f444c] hover:border-[#a31f34] hover:text-[#a31f34] flex items-center justify-center text-xs font-bold transition-colors" aria-label="Next paper">→</button>
+            </div>
+          </div>
+
+          <!-- Active Paper Stage -->
+          <div id="paper-combined-list">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PART 2: MULTI-PANEL EMPIRICAL RESULTS & VISUALIZATIONS -->
+    <section id="part2" class="pt-10 pb-12 border-t border-[#e4e6ea]">
+      <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-5">
+        <div>
+          <div class="text-xs font-mono-code font-semibold text-[#a31f34] uppercase tracking-wider mb-1">PART 02 · EMPIRICAL RESULTS &amp; VISUALIZATIONS</div>
+          <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-[#181a1d]" data-i18n="p2_title">六篇论文核心结果多维可视化对比</h2>
+
+        </div>
+      </div>
+
+      <!-- Unified 5-Paper Color Legend & Interactive Highlight Bar -->
+      <div class="bento-card p-3.5 sm:p-4 mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-2" id="paper-color-legend">
+          <!-- Populated by JS -->
+        </div>
+        <div class="flex items-center gap-3 text-[11px] font-mono-code text-[#565c66]">
+          <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-[#d1d5db] inline-block border border-[#c0c5ce]"></span><span data-i18n="legend_base">基座 / VLA基线</span></span>
+          <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-[#9ca3af] inline-block"></span><span data-i18n="legend_ref">闭源前沿模型 (GPT / Claude / Codex)</span></span>
+        </div>
+      </div>
+
+      <!-- Single Switchable Chart Stage (4 Charts) -->
+      <div class="bento-white p-5 sm:p-6 mb-6">
+        <!-- Chart Switcher Bar -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-[#eef0f3]">
+          <div class="inline-flex flex-wrap gap-1.5 bg-[#f6f7f8] p-1 rounded-xl border border-[#e4e6ea]" role="tablist" id="chart-switcher">
+            <button type="button" class="tab-btn active" data-chart-tab="libero" data-i18n="ctab_libero">2.1 LIBERO &amp; RoboLab</button>
+            <button type="button" class="tab-btn" data-chart-tab="robodojo" data-i18n="ctab_robodojo">2.2 RoboDojo</button>
+            <button type="button" class="tab-btn" data-chart-tab="transfer" data-i18n="ctab_transfer">2.3 真机与迁移</button>
+            <button type="button" class="tab-btn" data-chart-tab="mechanism" data-i18n="ctab_mechanism">2.4 消融与效率</button>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <div id="c2-sub-toggle" class="hidden inline-flex p-0.5 rounded-lg bg-[#f2f3f5] border border-[#e4e6ea]">
+              <button type="button" id="c2-mode-sr" class="px-2.5 py-1 text-[11px] font-semibold rounded-md bg-[#181a1d] text-white" data-i18n="c2_tab_sr">成功率 SR (%)</button>
+              <button type="button" id="c2-mode-score" class="px-2.5 py-1 text-[11px] font-semibold rounded-md text-[#565c66] hover:text-[#181a1d]" data-i18n="c2_tab_score">官方 Score</button>
+            </div>
+            <div id="c4-sub-toggle" class="hidden inline-flex p-0.5 rounded-lg bg-[#f2f3f5] border border-[#e4e6ea]">
+              <button type="button" id="c4-mode-ablation" class="px-2.5 py-1 text-[11px] font-semibold rounded-md bg-[#181a1d] text-white" data-i18n="c4_tab_a">消融与诊断</button>
+              <button type="button" id="c4-mode-efficiency" class="px-2.5 py-1 text-[11px] font-semibold rounded-md text-[#565c66] hover:text-[#181a1d]" data-i18n="c4_tab_b">效率与降本</button>
+            </div>
+            <div class="inline-flex items-center gap-1">
+              <button type="button" id="chart-prev-btn" class="w-8 h-8 rounded-lg border border-[#e4e6ea] bg-white text-[#3f444c] hover:border-[#a31f34] hover:text-[#a31f34] flex items-center justify-center text-xs font-bold transition-colors" aria-label="Previous chart">←</button>
+              <span id="chart-page-ind" class="text-xs font-mono-code text-[#848b96] px-1.5">1 / 4</span>
+              <button type="button" id="chart-next-btn" class="w-8 h-8 rounded-lg border border-[#e4e6ea] bg-white text-[#3f444c] hover:border-[#a31f34] hover:text-[#a31f34] flex items-center justify-center text-xs font-bold transition-colors" aria-label="Next chart">→</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Active Chart Header -->
+        <div class="flex flex-wrap items-start justify-between gap-2 mb-4">
+          <div>
+            <span id="active-chart-tag" class="text-[10px] font-mono-code font-semibold text-[#a31f34] uppercase">FIG 2.1 · SIMULATION POST-TRAINING</span>
+            <h3 id="active-chart-title" class="text-base sm:text-lg font-bold text-[#181a1d] mt-0.5">—</h3>
+            <p id="active-chart-sub" class="text-xs text-[#565c66] mt-0.5">—</p>
+          </div>
+          <span id="active-chart-unit" class="neutral-badge text-[11px] font-mono-code px-2.5 py-1 rounded shrink-0">SR (%)</span>
+        </div>
+
+        <!-- Single Responsive Fixed-Height Canvas -->
+        <div class="relative h-[400px] sm:h-[440px] w-full">
+          <canvas id="mainResultsChart"></canvas>
+        </div>
+
+        <!-- Reference Callout Strip (for clean apples-to-apples frontier / score references) -->
+        <div id="chart-ref-strip" class="mt-4 pt-3.5 border-t border-[#eef0f3] flex flex-wrap items-center gap-2"></div>
+
+        <p id="active-chart-note" class="text-[11px] text-[#848b96] mt-2.5 leading-relaxed">—</p>
+      </div>
+
+      <!-- 5-Paper Key Highlights (Single Switchable Stage) -->
+      <div class="bento-white overflow-hidden mb-6">
+        <div class="px-4 sm:px-5 py-3 bg-[#f6f7f8] border-b border-[#e4e6ea] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-xs font-mono-code font-semibold text-[#848b96] uppercase mr-1" data-i18n="hl_section_title">六篇论文核心亮点</span>
+            <div id="highlight-switcher-tabs" class="inline-flex flex-wrap gap-1.5" role="tablist">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+          <div class="inline-flex items-center gap-1 shrink-0">
+            <button type="button" id="highlight-prev-btn" class="w-8 h-8 rounded-lg border border-[#e4e6ea] bg-white text-[#3f444c] hover:border-[#a31f34] hover:text-[#a31f34] flex items-center justify-center text-xs font-bold transition-colors" aria-label="Previous highlight">←</button>
+            <span id="highlight-page-ind" class="text-xs font-mono-code text-[#848b96] px-1.5">1 / 6</span>
+            <button type="button" id="highlight-next-btn" class="w-8 h-8 rounded-lg border border-[#e4e6ea] bg-white text-[#3f444c] hover:border-[#a31f34] hover:text-[#a31f34] flex items-center justify-center text-xs font-bold transition-colors" aria-label="Next highlight">→</button>
+          </div>
+        </div>
+        <div id="efficiency-panel" class="p-5 sm:p-6">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+      <!-- 5-Paper Grounded Empirical Summary (Single Switchable Stage) -->
+      <div class="bento-white overflow-hidden">
+        <div class="px-4 sm:px-5 py-3 bg-[#f6f7f8] border-b border-[#e4e6ea] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-xs font-mono-code font-semibold text-[#848b96] uppercase mr-1" data-i18n="res_table_title">六篇论文核心实证指标</span>
+            <div id="summary-switcher-tabs" class="inline-flex flex-wrap gap-1.5" role="tablist">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+          <div class="inline-flex items-center gap-1 shrink-0">
+            <button type="button" id="summary-prev-btn" class="w-8 h-8 rounded-lg border border-[#e4e6ea] bg-white text-[#3f444c] hover:border-[#a31f34] hover:text-[#a31f34] flex items-center justify-center text-xs font-bold transition-colors" aria-label="Previous summary">←</button>
+            <span id="summary-page-ind" class="text-xs font-mono-code text-[#848b96] px-1.5">1 / 6</span>
+            <button type="button" id="summary-next-btn" class="w-8 h-8 rounded-lg border border-[#e4e6ea] bg-white text-[#3f444c] hover:border-[#a31f34] hover:text-[#a31f34] flex items-center justify-center text-xs font-bold transition-colors" aria-label="Next summary">→</button>
+          </div>
+        </div>
+        <div id="results-summary-body" class="p-5 sm:p-6">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- PART 3: OUR PERSPECTIVE & PROPOSED PARADIGM -->
+    <section id="part3" class="pt-10 pb-8 border-t border-[#e4e6ea]">
+      <div class="mb-6">
+        <div class="text-xs font-mono-code font-semibold text-[#a31f34] uppercase tracking-wider mb-1">PART 03 · OUR PERSPECTIVE &amp; PROPOSED PARADIGM</div>
+        <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-[#181a1d]" data-i18n="p3_title">我们的思路：闭源任务设计 × 开源空间动作固化 × 在线 RL 闭环</h2>
+        <p class="text-sm text-[#565c66] mt-1.5 max-w-4xl leading-relaxed" data-i18n="p3_lead">
+          现实部署中不可能为每台双臂或人形机器人持续实时调用昂贵的闭源前沿大模型。我们的核心思路是：由闭源 LLM 负责实验与仿真任务设计，驱动小参数开源 LLM 在 MuJoCo / Isaac Gym 中探索并固化对空间与动作的理解，随后在真实与在线 Rollout 数据上进行强化学习，并将结果反馈给闭源 LLM 进行下一轮任务重构。
+        </p>
+      </div>
+
+      <!-- Architecture Sketch Card -->
+      <div class="bento-card p-5 sm:p-6 mb-5">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3.5">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="accent-badge text-xs font-mono-code font-semibold px-2.5 py-0.5 rounded" data-i18n="p3_fig_badge">FRAMEWORK SKETCH</span>
+            <span class="text-xs font-mono-code text-[#565c66]" data-i18n="p3_fig_title">闭源任务设计 → 开源能力迁移与固化 → 在线 RL 闭环反馈</span>
+          </div>
+          <button type="button" id="zoom-our-fig-btn" class="px-2.5 py-1 rounded-md text-xs font-semibold bg-white border border-[#d0d4dc] text-[#181a1d] hover:border-[#a31f34] hover:text-[#a31f34] transition-colors" data-i18n="btn_zoom_our">
+            全屏放大 ⤢
+          </button>
+        </div>
+        <div class="bg-white rounded-xl border border-[#e4e6ea] p-3 sm:p-4 flex justify-center">
+          <img id="our-pipeline-img" src="assets/figures/our_pipeline.png" alt="Our Proposed RUA Co-Evolution Framework" class="max-w-full h-auto max-h-[420px] object-contain cursor-zoom-in rounded" />
+        </div>
+      </div>
+
+      <!-- 4-Stage Closed-Loop Pipeline -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 mb-5">
+        <div class="bento-white p-4 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-[11px] font-mono-code font-bold px-2 py-0.5 rounded bg-[#23272d] text-white">STEP 01</span>
+              <span class="text-[11px] font-mono-code text-[#848b96]">Closed LLM</span>
+            </div>
+            <h3 class="text-sm font-bold text-[#181a1d] mb-1.5" data-i18n="p3_s1_t">闭源大模型设计仿真任务</h3>
+            <p class="text-xs text-[#565c66] leading-relaxed" data-i18n="p3_s1_d">利用 GPT / Claude 的高层规划与物理先验，在 MuJoCo、Isaac Gym 等仿真器中为双臂及人形机器人设计多样化实验与课程任务。</p>
+          </div>
+        </div>
+
+        <div class="bento-white p-4 flex flex-col justify-between border-t-2 border-t-[#a31f34]">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-[11px] font-mono-code font-bold px-2 py-0.5 rounded bg-[#a31f34] text-white">STEP 02</span>
+              <span class="text-[11px] font-mono-code text-[#a31f34]">Ability Transfer</span>
+            </div>
+            <h3 class="text-sm font-bold text-[#181a1d] mb-1.5" data-i18n="p3_s2_t">空间与动作理解迁移固化</h3>
+            <p class="text-xs text-[#565c66] leading-relaxed" data-i18n="p3_s2_d">不依赖闭源模型直接生成海量成功轨迹（No generate data），而是让小参数开源 LLM 在仿真中探索动作，将高阶空间/动作理解与动作空间固化到开源权重中。</p>
+          </div>
+        </div>
+
+        <div class="bento-white p-4 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-[11px] font-mono-code font-bold px-2 py-0.5 rounded bg-[#3f444c] text-white">STEP 03</span>
+              <span class="text-[11px] font-mono-code text-[#848b96]">Online RL</span>
+            </div>
+            <h3 class="text-sm font-bold text-[#181a1d] mb-1.5" data-i18n="p3_s3_t">真实与在线 Rollout 强化学习</h3>
+            <p class="text-xs text-[#565c66] leading-relaxed" data-i18n="p3_s3_d">开源 LLM 本身已具备基础视觉感知，在补齐空间与动作理解后，直接在真实与在线 Rollout 数据上执行强化学习，摆脱对闭源实时推理的依赖。</p>
+          </div>
+        </div>
+
+        <div class="bento-white p-4 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-[11px] font-mono-code font-bold px-2 py-0.5 rounded bg-[#6b7280] text-white">STEP 04</span>
+              <span class="text-[11px] font-mono-code text-[#848b96]">Feedback Loop</span>
+            </div>
+            <h3 class="text-sm font-bold text-[#181a1d] mb-1.5" data-i18n="p3_s4_t">闭环反馈与任务重构</h3>
+            <p class="text-xs text-[#565c66] leading-relaxed" data-i18n="p3_s4_d">将在线 RL 的执行表现、失败案例与能力边界回传给闭源 LLM，自动触发下一轮针对性的任务设计与 Agent 自我演进。</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3 Core Open Research Questions (from the sketch) -->
+      <div class="bento-card p-5 sm:p-6">
+        <div class="text-xs font-mono-code font-semibold text-[#a31f34] uppercase tracking-wider mb-3" data-i18n="p3_q_heading">
+          核心待解研究问题 · KEY RESEARCH QUESTIONS
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+          <div class="bento-white p-4">
+            <div class="text-xs font-mono-code font-bold text-[#181a1d] mb-1">Q1 · How to design tasks?</div>
+            <p class="text-xs text-[#565c66] leading-relaxed" data-i18n="p3_q1">如何引导闭源 LLM 自动构造覆盖双臂协同与人形控制的高价值仿真任务与难度课程，避免无效探索？</p>
+          </div>
+          <div class="bento-white p-4">
+            <div class="text-xs font-mono-code font-bold text-[#a31f34] mb-1">Q2 · Ability transfer without generated data?</div>
+            <p class="text-xs text-[#565c66] leading-relaxed" data-i18n="p3_q2">在不依赖闭源大模型直接采集成功轨迹（No generate data）的条件下，如何高效地把高阶空间与动作理解能力迁移并固定到小参数开源 LLM 中？</p>
+          </div>
+          <div class="bento-white p-4">
+            <div class="text-xs font-mono-code font-bold text-[#181a1d] mb-1">Q3 · Computer Agent or Robot Agent?</div>
+            <p class="text-xs text-[#565c66] leading-relaxed" data-i18n="p3_q3">底层自我进化智能体应采用通用 Computer-Use 范式，还是面向物理控制的专用 Robot Harness（VLA skills / Control code）？</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="mt-10 pt-6 border-t border-[#e4e6ea] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-[#848b96]">
+      <div class="font-mono-code">Robot-Use Agent (RUA) with LLMs · Static GitHub Pages Edition</div>
+      <div data-i18n="footer_note">数据均摘自各论文公开 arXiv 原文与项目主页（2026年10–11月）</div>
+    </footer>
+  </main>
+
+  <!-- Lightbox Modal for Zooming Figures -->
+  <div id="lightbox-modal" class="fixed inset-0 z-50 hidden modal-backdrop flex items-center justify-center p-4" role="dialog" aria-modal="true">
+    <div class="bg-white rounded-2xl max-w-5xl w-full max-h-[92vh] flex flex-col overflow-hidden shadow-2xl border border-[#e4e6ea]">
+      <div class="px-5 py-3.5 border-b border-[#e4e6ea] flex items-center justify-between gap-4 bg-[#f6f7f8]">
+        <div>
+          <span id="lightbox-title" class="text-sm font-bold text-[#181a1d]">Figure</span>
+          <span id="lightbox-sub" class="text-xs text-[#565c66] ml-2"></span>
+        </div>
+        <button id="lightbox-close" type="button" class="px-3 py-1 rounded-lg text-xs font-semibold bg-[#181a1d] text-white hover:bg-[#a31f34] transition-colors">ESC / Close</button>
+      </div>
+      <div class="p-4 overflow-auto flex-1 flex items-center justify-center bg-white">
+        <img id="lightbox-img" src="" alt="Paper Architecture Figure" class="max-w-full max-h-[78vh] h-auto rounded-lg border border-[#e4e6ea]" />
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. I18N DICTIONARY (ZH / EN)
+    // =========================================================================
+    const I18N = {
+      zh: {
+        nav_overview: "第一部分：文献与范式精读",
+        nav_part1: "第一部分：范式分析",
+        nav_part2: "第二部分：多维结果绘图",
+        nav_part3: "第三部分：我们的思路",
+        hero_tag2: "6 篇核心前沿文献",
+        hero_tag3: "Sim-to-Real & Agentic Post-Training",
+        hero_title: "Robot-Use Agents with LLMs：范式演进、实证结果与未来方向",
+        hero_subtitle: "在具身智能领域，基于大模型推理与 Agent 闭环控制来驱动仿真训练与真机迁移（Robot-Use Agent, RUA）正成为继端到端 VLA 之后的新兴范式。然而，开源与闭源底座如何选择、Harness 应薄还是厚、RL 后训练与在线自我改进如何权衡，目前尚未形成统一范式。本专题系统拆解 2026 年最具代表性的六篇前沿工作。",
+        loop_label: "核心闭环",
+        loop_1: "Observe 感知状态",
+        loop_2: "Reason 推理 / 编排",
+        loop_3: "Act 位姿 / 代码 / 工具",
+        loop_4: "RL / RSI 反馈演进",
+        stat_papers: "篇文献",
+        stat_models: "开源/闭源底座",
+        stat_bench: "仿真与真机基准",
+        index_heading: "六篇核心文献速览与机制精读",
+        index_sub: "点击下方标签或箭头切换六篇论文；表面精简展示 LLM / Agent / RL 用法，可按需展开 01–04 机制流程、Abstract 与原文 PDF 架构图",
+        toggle_all_cards: "全部展开详情",
+        collapse_all_cards: "全部收起详情",
+        btn_expand_detail: "展开精读",
+        btn_collapse_detail: "收起精读",
+        p1_title: "五篇论文的范式拆解与横向对比",
+        p1_desc: "从 LLM 底座、Agent/Harness 厚度、动作接口、强化学习/后训练策略到 Sim-to-Real 机制，系统定位五种技术路线。",
+        filter_train: "训练范式:",
+        f_all: "全部 (5)",
+        f_rl: "多轮 RL 后训练",
+        f_rsi: "真机在线 RSI",
+        f_harness: "零样本统一 Harness",
+        filter_action: "动作接口:",
+        f_all_action: "全部",
+        f_pose: "原生位姿",
+        f_code: "Code-as-Policy",
+        f_hybrid: "混合工具 / VLA",
+        matrix_title: "核心范式对照矩阵",
+        col_paper: "论文",
+        col_llm: "LLM / VLM 底座",
+        col_agent: "Agent & Harness 形态",
+        col_action: "动作接口",
+        col_rl: "RL / 后训练方法",
+        col_s2r: "Sim-to-Real 机制",
+        deepdive_title: "分论文机制精读（点击可展开原文摘要与 PDF 架构图）",
+        toggle_all_figs: "全部展开架构图",
+        collapse_all_figs: "全部收起架构图",
+        btn_show_fig: "展开原文架构图",
+        btn_hide_fig: "收起架构图",
+        btn_show_abs: "展开 Abstract",
+        btn_hide_abs: "收起 Abstract",
+        btn_zoom: "全屏放大",
+        step_input: "输入观测",
+        step_reason: "推理 / 编排",
+        step_act: "动作执行",
+        step_update: "训练 / 演进",
+        p2_title: "六篇论文核心结果多维可视化对比",
+        p2_desc: "采用统一的黑白灰—深红色系为六篇论文分配专属标识色，直观对比各路线在仿真基准、跨本体/真机迁移、反馈消融与系统效率上的实证表现。",
+        legend_label: "论文色系标识（点击可高亮单篇）:",
+        legend_all: "全部论文",
+        legend_base: "基座 / VLA基线",
+        legend_ref: "闭源前沿模型 (GPT / Claude / Codex)",
+        c1_title: "LIBERO / PRO & RoboLab-120：RL 后训练跃升对比",
+        c1_sub: "PEAR (27B)、AgenticRoboRL (9B)、CaPtain (4B) 与 ZAP (27B) 从基座/SFT 到多轮 RL 的成功率变化",
+        c1_note: "注：PEAR LIBERO-Pro/新指令浅灰柱为微调 π0.5（53.3%/0.75%）；闭源参考柱为 GPT-6 Astra max（80.6%）、Codex GPT-5.5（72.1%）与 RoboLab-120 上的 GPT-6 Astra（72.2%）。",
+        c2_title: "RoboDojo：RSI 固化程序 vs. 零样本开源 Harness",
+        c2_sub: "涵盖 PyRUA-REAL 42 任务总分与三维能力拆解、uni-robot-agent 开源零样本及 CaPtain 跨本体边界",
+        c2_note: "注：PyRUA-REAL 为任务探索固化程序成功率（SR%）；uni-robot-agent 与 RoboProbe 展示官方基准 Score（无特权输入零样本）；CaPtain-4B 为单臂训练零样本跨双臂迁移。",
+        c3_title: "真机部署与跨本体 / 跨仿真器迁移表现",
+        c3_sub: "PEAR/ZAP 纯仿真零样本双臂真机、PyRUA-REAL 8 项真机、uni-robot-agent 19 项真机及 ZAP/CaPtain 跨本体迁移",
+        c3_note: "注：uni-robot-agent 为 19 项真机 Score（53.50 vs π0.5 47.75）；ZAP 真机双臂 YAM 96.7%（基座 16.7%），跨单臂 Franka 55.9%（对比 Lakeside 51.0%）。",
+        c4_title_a: "机制消融与核心优势对比",
+        c4_sub_a: "PyRUA-REAL 反馈模态消融（B/BS/BVJ）、CaP-Bench 及真机/鲁棒性关键对比",
+        c4_note_a: "注：ZAP 将小模型运动调用准确率从 36% 提升至 85%（语义规划保持 95% 正确）；PyRUA-REAL 消融显示 BVJ（54.2%）远优于 B（15.3%）。",
+        c4_title_b: "系统效率、提速与抗扰动增益",
+        c4_sub_b: "异步执行重叠率、固化部署耗时压缩、Token/调用节省与 RL 扰动增益",
+        c4_note_b: "注：ZAP 相比 GPT-6 Astra 成本降低 94.0%（$4.87→$0.29，17×便宜）、耗时降低 63.2%（397s→146s，3×更快）；uni-robot-agent 异步重叠 84.5–93.8%；PyRUA-REAL 提速 78.2%。",
+        c2_tab_sr: "成功率 SR (%)",
+        c2_tab_score: "官方 Score",
+        c4_tab_a: "消融与诊断",
+        c4_tab_b: "效率与增益",
+        ctab_libero: "2.1 LIBERO & RoboLab",
+        ctab_robodojo: "2.2 RoboDojo",
+        ctab_transfer: "2.3 真机与迁移",
+        ctab_mechanism: "2.4 消融与效率",
+        tab_libero: "LIBERO & LIBERO-PRO",
+        tab_robodojo: "RoboDojo 基准",
+        tab_transfer: "真机与跨本体迁移",
+        tab_efficiency: "效率、反馈与通用能力",
+        insight_label: "关键实证发现",
+        hl_section_title: "六篇论文核心亮点",
+        jump_detail: "查看该论文机制精读 ↑",
+        res_table_title: "六篇论文核心实证指标",
+        res_table_note: "均来源于原文公开数据",
+        rcol_paper: "论文",
+        rcol_sim: "核心仿真成绩",
+        rcol_real: "真机 / 迁移成绩",
+        rcol_edge: "核心优势与边界",
+        p3_title: "我们的思路：闭源任务设计 × 开源空间动作固化 × 在线 RL 闭环",
+        p3_lead: "现实部署中不可能为每台双臂或人形机器人持续实时调用昂贵的闭源前沿大模型。我们的核心思路是：由闭源 LLM 负责实验与仿真任务设计，驱动小参数开源 LLM 在 MuJoCo / Isaac Gym 中探索并固化对空间与动作的理解，随后在真实与在线 Rollout 数据上进行强化学习，并将结果反馈给闭源 LLM 进行下一轮任务重构。",
+        p3_fig_badge: "框架草图 · FRAMEWORK",
+        p3_fig_title: "闭源任务设计 → 开源能力迁移与固化 → 在线 RL 闭环反馈",
+        btn_zoom_our: "全屏放大 ⤢",
+        p3_s1_t: "闭源大模型设计仿真任务",
+        p3_s1_d: "利用 GPT / Claude 的高层规划与物理先验，在 MuJoCo、Isaac Gym 等仿真器中为双臂及人形机器人设计多样化实验与课程任务。",
+        p3_s2_t: "空间与动作理解迁移固化",
+        p3_s2_d: "不依赖闭源模型直接生成海量成功轨迹（No generate data），而是让小参数开源 LLM 在仿真中探索动作，将高阶空间/动作理解与动作空间固化到开源权重中。",
+        p3_s3_t: "真实与在线 Rollout 强化学习",
+        p3_s3_d: "开源 LLM 本身已具备基础视觉感知，在补齐空间与动作理解后，直接在真实与在线 Rollout 数据上执行强化学习，摆脱对闭源实时推理的依赖。",
+        p3_s4_t: "闭环反馈与任务重构",
+        p3_s4_d: "将在线 RL 的执行表现、失败案例与能力边界回传给闭源 LLM，自动触发下一轮针对性的任务设计与 Agent 自我演进。",
+        p3_q_heading: "核心待解研究问题 · KEY RESEARCH QUESTIONS",
+        p3_q1: "如何引导闭源 LLM 自动构造覆盖双臂协同与人形控制的高价值仿真任务与难度课程，避免无效探索？",
+        p3_q2: "在不依赖闭源大模型直接采集成功轨迹（No generate data）的条件下，如何高效地把高阶空间与动作理解能力迁移并固定到小参数开源 LLM 中？",
+        p3_q3: "底层自我进化智能体应采用通用 Computer-Use 范式，还是面向物理控制的专用 Robot Harness（VLA skills / Control code）？",
+        footer_note: "数据均摘自各论文公开 arXiv 原文与项目主页（2026年10–11月）",
+        empty_filter: "当前筛选条件下没有匹配的论文，请切换上方标签。"
+      },
+      en: {
+        nav_overview: "Part 1: Papers & Paradigms",
+        nav_part1: "Part 1: Paradigms",
+        nav_part2: "Part 2: Results & Charts",
+        nav_part3: "Part 3: Our Vision",
+        hero_tag2: "6 Core Frontier Papers",
+        hero_tag3: "Sim-to-Real & Agentic Post-Training",
+        hero_title: "Robot-Use Agents with LLMs: Paradigm Survey, Empirical Results & Future Directions",
+        hero_subtitle: "In embodied AI, using LLM reasoning and agentic closed loops for simulation post-training and real-robot transfer (Robot-Use Agents, RUAs) is emerging alongside end-to-end VLAs. Yet key paradigm choices—open vs. closed backbones, thin vs. thick harnesses, and multi-turn RL vs. online self-improvement—remain unsettled. This site dissects six representative 2026 papers.",
+        loop_label: "CORE LOOP",
+        loop_1: "Observe State & Vision",
+        loop_2: "Reason / Orchestrate",
+        loop_3: "Act Pose / Code / Tools",
+        loop_4: "RL / RSI Feedback",
+        stat_papers: "Papers",
+        stat_models: "Open/Closed Models",
+        stat_bench: "Sim & Real Suites",
+        index_heading: "Core Papers: Compact Overview & Expandable Deep Dive",
+        index_sub: "Switch between all 6 papers via tabs or arrows; surface highlights LLM / Agent / RL usage, with expandable 01–04 pipeline, Abstract & PDF figure",
+        toggle_all_cards: "Expand All Details",
+        collapse_all_cards: "Collapse All Details",
+        btn_expand_detail: "Expand Details",
+        btn_collapse_detail: "Collapse",
+        p1_title: "Paradigm Breakdown & Cross-Paper Matrix",
+        p1_desc: "Systematic comparison across base LLM/VLMs, agent/harness thickness, action interfaces, RL post-training recipes, and Sim-to-Real mechanisms.",
+        filter_train: "Training:",
+        f_all: "All (5)",
+        f_rl: "Multi-Turn RL",
+        f_rsi: "Real-World RSI",
+        f_harness: "Zero-Shot Harness",
+        filter_action: "Interface:",
+        f_all_action: "All",
+        f_pose: "Native Pose",
+        f_code: "Code-as-Policy",
+        f_hybrid: "Hybrid / Tool+VLA",
+        matrix_title: "Core Paradigm Comparison Matrix",
+        col_paper: "Paper",
+        col_llm: "LLM / VLM Backbone",
+        col_agent: "Agent & Harness Design",
+        col_action: "Action Interface",
+        col_rl: "RL / Post-Training",
+        col_s2r: "Sim-to-Real Transfer",
+        deepdive_title: "Per-Paper Mechanism Deep Dive (Click to Expand Abstract & PDF Figure)",
+        toggle_all_figs: "Expand All Figures",
+        collapse_all_figs: "Collapse All Figures",
+        btn_show_fig: "Show Architecture Figure",
+        btn_hide_fig: "Hide Figure",
+        btn_show_abs: "Show Abstract",
+        btn_hide_abs: "Hide Abstract",
+        btn_zoom: "Zoom Fullscreen",
+        step_input: "Observation",
+        step_reason: "Reason / Plan",
+        step_act: "Execution",
+        step_update: "Training / Update",
+        p2_title: "Multi-Panel Empirical Results & Visual Comparison",
+        p2_desc: "Each paper uses a distinct hue within the cohesive monochrome-crimson palette across simulation benchmarks, real-world transfer, ablations, and system efficiency.",
+        legend_label: "Paper Palette (click to highlight):",
+        legend_all: "All Papers",
+        legend_base: "Base / VLA",
+        legend_ref: "Closed Frontier (GPT / Claude / Codex)",
+        c1_title: "LIBERO / PRO & RoboLab-120: Multi-Turn RL Gains",
+        c1_sub: "Progression from Base / SFT to Multi-Turn RL for PEAR (27B), AgenticRoboRL (9B), CaPtain (4B), and ZAP (27B)",
+        c1_note: "Note: Light-gray bars for PEAR denote fine-tuned π0.5 (53.3% / 0.75%); ref bars are GPT-6 Astra max (80.6%), Codex GPT-5.5 (72.1%), and GPT-6 Astra on RoboLab-120 (72.2%).",
+        c2_title: "RoboDojo: Frozen RSI Programs vs. Zero-Shot Open Harnesses",
+        c2_sub: "PyRUA-REAL 42-task overall & capability breakdown, uni-robot-agent zero-shot open models & CaPtain transfer",
+        c2_note: "Note: PyRUA-REAL shows explored frozen-program SR (%); uni-robot-agent & RoboProbe show zero-shot Scores without privileged state; CaPtain-4B is zero-shot dual-arm transfer.",
+        c3_title: "Real-World Deployment & Cross-Embodiment Transfer",
+        c3_sub: "PEAR & ZAP zero-shot real YAM, PyRUA-REAL 8 real tasks, uni-robot-agent 19 real tasks & ZAP/CaPtain transfer",
+        c3_note: "Note: uni-robot-agent reports Score on 19 real tasks (53.50 vs π0.5 47.75); ZAP hits 96.7% on real YAM (base 16.7%) and 55.9% zero-shot on Franka (vs Lakeside 51.0%).",
+        c4_title_a: "Mechanism Ablations & Key Comparisons",
+        c4_sub_a: "PyRUA-REAL feedback modality ablation (B/BS/BVJ), CaP-Bench & real-world / robustness margins",
+        c4_note_a: "Note: ZAP lifts valid motion calls from 36% to 85% while preserving 95% semantic planning; PyRUA-REAL BVJ (54.2%) strongly beats B (15.3%).",
+        c4_title_b: "System Efficiency, Speedup & Robustness Gains",
+        c4_sub_b: "Async execution overlap, frozen deployment speedup, token/call reduction & RL perturbation gains",
+        c4_note_b: "Note: ZAP cuts cost by 94.0% ($4.87→$0.29, 17× cheaper) and time by 63.2% (397s→146s, 3× faster) vs GPT-6 Astra; uni-robot overlaps 84.5–93.8%; PyRUA-REAL cuts time 78.2%.",
+        c2_tab_sr: "Success Rate (%)",
+        c2_tab_score: "Official Score",
+        c4_tab_a: "Ablations",
+        c4_tab_b: "Efficiency",
+        ctab_libero: "2.1 LIBERO & RoboLab",
+        ctab_robodojo: "2.2 RoboDojo",
+        ctab_transfer: "2.3 Real & Transfer",
+        ctab_mechanism: "2.4 Ablations & Eff.",
+        tab_libero: "LIBERO & LIBERO-PRO",
+        tab_robodojo: "RoboDojo Suite",
+        tab_transfer: "Real-World & Transfer",
+        tab_efficiency: "Efficiency & Capabilities",
+        insight_label: "Key Empirical Findings",
+        hl_section_title: "Key Highlights (6 Papers)",
+        jump_detail: "Open Mechanism Deep Dive ↑",
+        res_table_title: "Grounded Empirical Metrics",
+        res_table_note: "All figures verified from published arXiv papers",
+        rcol_paper: "Paper",
+        rcol_sim: "Simulation Benchmarks",
+        rcol_real: "Real-World / Transfer",
+        rcol_edge: "Strengths & Boundaries",
+        p3_title: "Our Perspective: Closed-LLM Task Design × Open-LLM Action Grounding × Online RL Loop",
+        p3_lead: "Continuously querying frontier closed-source LLMs in real time for every dual-arm or humanoid robot is impractical. Our paradigm separates roles: closed-source LLMs design simulation tasks and curricula in MuJoCo / Isaac Gym; compact open-weight LLMs explore and internalize spatial & action comprehension directly into their weights; grounded open models then run online RL on real/rollout data and feed outcomes back to the closed LLM for iterative task redesign.",
+        p3_fig_badge: "FRAMEWORK SKETCH",
+        p3_fig_title: "Closed-LLM Task Design → Open-LLM Ability Transfer → Online RL Feedback Loop",
+        btn_zoom_our: "Zoom Fullscreen ⤢",
+        p3_s1_t: "Closed-LLM Simulation Task Design",
+        p3_s1_d: "Frontier models (GPT / Claude) design diverse simulation tasks, curricula, and evaluation protocols in MuJoCo & Isaac Gym for dual-arm and humanoid robots.",
+        p3_s2_t: "Spatial & Action Comprehension Transfer",
+        p3_s2_d: "Without relying on closed models to generate massive successful trajectories (No generate data), small open LLMs explore in simulation and consolidate higher-level action & spatial understanding into their action space.",
+        p3_s3_t: "Online RL on Real & Rollout Data",
+        p3_s3_d: "Leveraging existing visual perception plus newly grounded spatial/action comprehension, the compact open LLM runs online RL on real/rollout data with low-latency local control.",
+        p3_s4_t: "Closed-Loop Feedback & Redesign",
+        p3_s4_d: "Execution traces, bottlenecks, and failure modes feed back to the closed-source LLM to synthesize targeted next-round tasks and drive agent self-improvement.",
+        p3_q_heading: "KEY OPEN RESEARCH QUESTIONS",
+        p3_q1: "How can closed-source LLMs systematically design high-value simulation tasks and curricula for dual-arm and humanoid action exploration?",
+        p3_q2: "How do we transfer higher-level spatial and action comprehension from frontier LLMs into compact open LLMs without generating static successful episodes?",
+        p3_q3: "Which self-improving agent interface works best—a general Computer-Use Agent or a specialized Robot Harness (VLA skills / control code)?",
+        footer_note: "All metrics grounded in official arXiv papers and project pages (Oct–Nov 2026)",
+        empty_filter: "No papers match the selected filters. Try resetting a filter pill above."
+      }
+    };
+
+    // =========================================================================
+    // 2. GROUNDED PAPER DATA (100% VERIFIED FROM TOOL OUTPUTS)
+    // =========================================================================
+    const PAPERS = [
+      {
+        id: "pear",
+        color: "#a31f34",
+        colorSoft: "#fbf1f3",
+        shortName: "PEAR",
+        date: "2026-11-13",
+        org: "MIT Han Lab",
+        arxivId: "2611.18562",
+        arxivUrl: "https://arxiv.org/html/2611.18562",
+        githubUrl: "https://github.com/mit-han-lab/pear",
+        projectUrl: null,
+        figure: "assets/figures/fig_1.png",
+        trainCat: "rl",
+        actionCat: "pose",
+        title: {
+          zh: "PEAR：在仿真中通过 RL 训练推理模型原生操控真实机器人",
+          en: "Training Reasoning Models in Simulation to Natively Use Real Robots"
+        },
+        briefLLM: { zh: "开源 Qwen3.8-27B（推理模型直接作策略）", en: "Open Qwen3.8-27B (reasoning model as policy)" },
+        briefAgent: { zh: "无 Harness · 多轮上下文直出 JSON 末端位姿", en: "Harness-free · multi-turn JSON end-effector poses" },
+        briefRL: { zh: "纯仿真零演示多轮 RURL（二值成败奖励）", en: "Pure-sim zero-demo multi-turn RURL (binary reward)" },
+        llm: {
+          zh: "开源 Qwen3.8-27B → Qwen3.8-27B-PEAR（推理模型直接作为策略）",
+          en: "Open-weight Qwen3.8-27B → Qwen3.8-27B-PEAR (reasoning model as policy)"
+        },
+        agent: {
+          zh: "极简无 Harness：无外置感知工具、无规划器、无技能库；上下文保留历史多轮交互",
+          en: "Harness-free: no external perception tools, planners, or skill libraries; multi-turn context"
+        },
+        action: {
+          zh: "JSON 格式末端执行器位姿增量（cm / rad）+ 外部 IK 与底层控制器",
+          en: "JSON end-effector pose deltas (cm / rad) executed via robot's own IK & controller"
+        },
+        rl: {
+          zh: "纯仿真多轮 RL（RURL，基于 veRL + LMCache），无需示教数据，仅用任务成功二值奖励与 score-centering 校正",
+          en: "Pure-sim multi-turn RL (RURL on veRL + LMCache), zero demonstrations, binary episode reward + score-centering"
+        },
+        s2r: {
+          zh: "统一位姿协议解耦机器人本体；仅在 Prompt 中更换真机坐标与相机描述即可零样本部署到双臂 YAM",
+          en: "Unified pose protocol decouples kinematics; zero-shot real dual-arm YAM transfer by updating robot prompt"
+        },
+        pipeline: {
+          zh: [
+            "多视角相机帧 + 机械臂状态 JSON + 机器人工作空间描述",
+            "Qwen3.8-27B 思维链（CoT）原生空间定位、规划与失败自检",
+            "输出末端位姿增量 JSON，由外部 IK 与控制器执行至静止/受阻",
+            "PEAR 引擎在 LIBERO/RoboDojo 并行 rollout，二值结果奖励更新策略"
+          ],
+          en: [
+            "Camera frames + arm state JSON + robot workspace description",
+            "Qwen3.8-27B CoT performs native localization, planning & failure check",
+            "Outputs end-effector pose delta JSON; external IK/controller executes",
+            "PEAR engine runs LIBERO/RoboDojo rollouts with binary-reward RL updates"
+          ]
+        },
+        abstract: {
+          zh: "论文提出 Post-training Engine for Agentic Robotics (PEAR)，完全在仿真环境中通过机器人使用强化学习（RURL）训练开源推理模型（Qwen3.8-27B），无需任何示教数据、感知工具或外置技能库。模型通过“相机帧输入 + 末端位姿 JSON 输出”的统一协议与环境多轮交互。在 LIBERO 上成功率由 1.6% 提升至 74.4%，接近最大推理开销下的前沿闭源模型；在 LIBERO-Pro 新指令任务上达到 57.4%（远超微调 VLA 模型 π0.5 的 0.75%）；且可直接零样本迁移至真实双臂机器人 YAM 取得 60.0% 成功率，同时在 9 项通用推理/代码/视觉基准上无性能退化。",
+          en: "Introduces PEAR (Post-training Engine for Agentic Robotics) to train an open-weight reasoning model (Qwen3.8-27B) via Robot-Use RL (RURL) entirely in simulation without demonstrations, perception tools, or skill libraries. Acting through a unified camera-to-pose JSON protocol, LIBERO success jumps from 1.6% to 74.4%, LIBERO-Pro novel instruction following reaches 57.4% (vs. 0.75% for fine-tuned π0.5), and zero-shot real dual-arm YAM transfer reaches 60.0% (base 0%), with zero measurable degradation across nine general reasoning, coding, and vision benchmarks."
+        },
+        simSummary: {
+          zh: "LIBERO: 1.6% → 74.4%；LIBERO-Pro 未见场景: 62.1% (π0.5: 53.3%)；新指令遵循: 57.4% (π0.5: 0.75%)",
+          en: "LIBERO: 1.6% → 74.4%; LIBERO-Pro unseen: 62.1% (π0.5: 53.3%); Novel instruction: 57.4% (π0.5: 0.75%)"
+        },
+        realSummary: {
+          zh: "双臂 YAM 真机零样本: 0% → 60.0%；未见 LIBERO-Long: 0.4% → 39.0%；新本体 RoboDojo pickup: 10.7% → 39.9%",
+          en: "Real dual-arm YAM zero-shot: 0% → 60.0%; Unseen LIBERO-Long: 0.4% → 39.0%; New robot RoboDojo pickup: 10.7% → 39.9%"
+        },
+        edgeSummary: {
+          zh: "无 Harness 耦合、9 项通用基准零退化；纯推理端到端依赖 27B 规模模型与大规模仿真算力",
+          en: "Zero harness coupling & zero degradation on 9 general benchmarks; relies on 27B reasoning backbone and large-scale sim RL"
+        }
+      },
+      {
+        id: "pyrua",
+        color: "#c85a53",
+        colorSoft: "#fcf3f2",
+        shortName: "PyRUA-REAL",
+        date: "2026-11-04",
+        org: "PKU DAGroup",
+        arxivId: "2611.06768",
+        arxivUrl: "https://arxiv.org/html/2611.06768v1",
+        githubUrl: "https://github.com/DAGroup-PKU/PyRUA-Lean/tree/REAL",
+        projectUrl: "https://dagroup-pku.github.io/PyRUA-Lean/real/",
+        figure: "assets/figures/fig_2.png",
+        trainCat: "rsi",
+        actionCat: "code",
+        title: {
+          zh: "PyRUA-REAL：真实世界递归自我改进（RSI）的机器人探索与自适应学习",
+          en: "PyRUA-REAL: Robot Exploration and Adaptive Learning through RSI in the Real World"
+        },
+        briefLLM: { zh: "闭源 GPT-6-Astra（免权重训练）", en: "Closed GPT-6-Astra (training-free)" },
+        briefAgent: { zh: "Researcher+Engineer 双 Agent + L0–L2 经验库写代码", en: "Researcher+Engineer agents + L0–L2 memory coding" },
+        briefRL: { zh: "无 RL · 真机视频+轨迹反馈驱动递归自我改进（RSI）", en: "No RL · real-world video+trajectory RSI refinement" },
+        llm: {
+          zh: "闭源前沿 Coding Agent（GPT-6-Astra），免权重训练",
+          en: "Closed frontier coding agent (GPT-6-Astra), training-free"
+        },
+        agent: {
+          zh: "Researcher（定目标/策略/停止条件）+ Engineer（写代码/实验/诊断）双角色协同 + L0 Facts / L1 Memory / L2 Skills 三层经验库",
+          en: "Researcher (objectives & stop criteria) + Engineer (code, test, diagnose) + 3-tier Experience (L0 Facts, L1 Memory, L2 Skills)"
+        },
+        action: {
+          zh: "可执行 Python 控制程序（组合感知、规划与底层控制原语），最终固化为离线脚本",
+          en: "Executable Python control programs composing perception, planning & control primitives; compiled to frozen scripts"
+        },
+        rl: {
+          zh: "无梯度更新 / 无 RL；通过真实物理交互的视频帧 + 关节轨迹证据（BVJ）驱动代码递归自我改进（RSI）",
+          en: "No RL weight updates; embodied Recursive Self-Improvement (RSI) driven by video + joint-trajectory execution evidence (BVJ)"
+        },
+        s2r: {
+          zh: "直接在真机环境闭环探索与迭代代码，跳过 Sim-to-Real 鸿沟，最终脱离在线大模型高效部署",
+          en: "Explores and refines directly on physical robots (no sim-to-real gap), then freezes programs for fast agent-free deployment"
+        },
+        pipeline: {
+          zh: [
+            "人工给定任务目标与初始观测；检索 L0 环境事实与 L1 历史经验",
+            "Researcher 制定实验计划，Engineer 复用 L2 技能库编写/修改 Python 策略",
+            "在真机或仿真中执行，采集视频帧、状态与日志作为诊断证据",
+            "局部精炼并写回经验库，迭代收敛后冻结为免在线 Agent 的部署程序"
+          ],
+          en: [
+            "Human sets goal & survey; retrieves L0 facts and L1 persistent memory",
+            "Researcher sets experiment plan; Engineer adapts L2 skills into Python code",
+            "Executes policy on robot, capturing frames, joint states & logs as evidence",
+            "Diagnoses failures, retains experience, and freezes into agent-free programs"
+          ]
+        },
+        abstract: {
+          zh: "研究物理世界中的具身递归自我改进（Embodied RSI）。PyRUA-REAL 构建了 Researcher 与 Engineer 双编码智能体协作框架，并将物理交互经验沉淀为 L0 事实、L1 记忆和 L2 可执行技能三层结构，基于视频帧与关节轨迹等执行证据持续迭代机器人控制代码，最终生成无需在线 LLM 决策的固化部署程序。在 8 项真实世界操作任务上平均成功率达 91.1%（其中 7 项实现完全离线无 Agent 运行，5 块积木堆叠耗时从 13.7 分钟降至 2.99 分钟）；在 42 项 RoboDojo 任务上平均成功率达 84.42%，显著高于 PyRUA-Lean（50.35%）与 GPT-6-Astra（22.48%）。",
+          en: "Studies embodied recursive self-improvement (RSI) via real-world exploration, code refinement, and deployment. Researcher and Engineer coding agents retain experience as L0 facts, L1 memory, and L2 executable skills, refining Python programs from visual and joint-trajectory feedback into frozen agent-free scripts. Achieves 91.1% average success across 8 real-world tasks (7/8 agent-free; 5-block stacking runtime drops from 13.7 min to 2.99 min) and 84.42% across 42 RoboDojo tasks (vs. 50.35% PyRUA-Lean and 22.48% GPT-6-Astra)."
+        },
+        simSummary: {
+          zh: "RoboDojo (42任务): 84.42% 平均成功率（精度 74.00%、长程 56.00%、泛化 41.17%）",
+          en: "RoboDojo (42 tasks): 84.42% avg SR (Precision 74.00%, Long-Horizon 56.00%, Generalization 41.17%)"
+        },
+        realSummary: {
+          zh: "8 项真机任务平均 91.1%（7/8 免在线 Agent）；网线插拔需在线辅助（10/17 vs 离线 0/4）",
+          en: "8 real-world tasks: 91.1% avg SR (7/8 agent-free); Ethernet insertion needs online assist (10/17 vs 0/4)"
+        },
+        edgeSummary: {
+          zh: "精度与部署速度极高（2.99 min/周期）；开发期需 1.5–45 小时真机探索，且对极细接触/未见泛化仍有边界",
+          en: "Top precision & fast offline deployment (2.99 min/cycle); requires 1.5–45h exploration per task; slightly lower generalization"
+        }
+      },
+      {
+        id: "agenticroborl",
+        color: "#23272d",
+        colorSoft: "#f1f2f4",
+        shortName: "AgenticRoboRL",
+        date: "2026-10-20",
+        org: "L-CodingSpace",
+        arxivId: "2610.28589",
+        arxivUrl: "https://arxiv.org/abs/2610.28589",
+        githubUrl: "https://github.com/L-CodingSpace/AgenticRoboRL",
+        projectUrl: "https://l-codingspace.github.io/AgenticRoboRL/",
+        figure: "assets/figures/fig_3.png",
+        trainCat: "rl",
+        actionCat: "hybrid",
+        title: {
+          zh: "AgenticRoboRL：将 Coding-Agent 后训练引入具身智能体",
+          en: "AgenticRoboRL: Bringing Coding-Agent Post-Training to Agentic Robotics"
+        },
+        briefLLM: { zh: "开源 Qwen3.5-9B 规划器", en: "Open Qwen3.5-9B planner" },
+        briefAgent: { zh: "Model-Call Proxy + 适配器兼容 VLA(RPent)/代码(CaP-X)", en: "Model-Call Proxy + adapters for VLA (RPent) & code (CaP-X)" },
+        briefRL: { zh: "教师轨迹 SFT + 多轮 RLOO（冻结执行器）", en: "Teacher SFT + multi-turn RLOO (frozen executors)" },
+        llm: {
+          zh: "开源 Qwen3.5-9B 规划器（教师轨迹蒸馏 + 多轮 RL）",
+          en: "Open-weight Qwen3.5-9B planner (teacher distillation + multi-turn RL)"
+        },
+        agent: {
+          zh: "跨 Harness 解耦架构：Model-Call Proxy 拦截记录每次调用的 token IDs 与 logprobs；轻量适配器兼容不同 Harness",
+          en: "Harness-agnostic proxy records per-call token IDs & logprobs; lightweight adapters bridge diverse harnesses"
+        },
+        action: {
+          zh: "混合兼容：同时支持 VLA 技能调用（RPent）与控制代码生成（CaP-X），执行组件全程冻结",
+          en: "Hybrid-compatible: supports both VLA skill invocation (RPent) and control-code generation (CaP-X) with frozen executors"
+        },
+        rl: {
+          zh: "两阶段：SFT（强教师成功轨迹，按学生格式重渲染）+ 多轮 RL（RLOO clipped policy gradient，仅用仿真器二值成败奖励）",
+          en: "2-stage: SFT on stronger teacher trajectories (rendered in student format) + multi-turn RLOO clipped policy gradient"
+        },
+        s2r: {
+          zh: "聚焦仿真内规划器后训练与无外部记忆泛化，通过固定底层 Harness 执行器复用既有迁移能力",
+          en: "Focuses on in-harness planner post-training without external memory, reusing underlying harness execution layers"
+        },
+        pipeline: {
+          zh: [
+            "利用强教师 Agent 在目标 Harness 内采集成功轨迹并适配学生输入格式",
+            "SFT 初始化 9B 规划器，在冻结执行器的 Harness 中进行多轮环境交互",
+            "Model-Call Proxy 透明记录每轮上下文、Token IDs 与 logprobs",
+            "适配器汇总 Episode 成败与有效性（过滤基建故障），执行 RLOO 策略更新"
+          ],
+          en: [
+            "Collects stronger teacher successful episodes and adapts them to student format",
+            "SFT initializes 9B planner; runs multi-turn rollouts inside frozen robot harness",
+            "Model-Call Proxy transparently records context, token IDs & logprobs per call",
+            "Harness adapter matches episode outcomes (filtering infra failures) for RLOO update"
+          ]
+        },
+        abstract: {
+          zh: "借鉴 Coding Agent 通过模型后训练实现能力跃升的经验，提出跨 Harness 通用具身规划器后训练框架 AgenticRoboRL。针对不同机器人系统执行机制各异（如 VLA 技能调用 RPent 与控制代码生成 CaP-X）的痛点，设计 Model-Call Proxy 透明记录规划器每次调用的 token IDs 与 logprobs，并通过轻量 Harness 适配器关联多轮交互与任务结果，在冻结执行组件的前提下统一执行“教师轨迹 SFT + 多轮 RLOO 强化学习”。在 LIBERO-PRO 上，将 9B 开源规划器成功率从 18.1% 提升至 71.0%（无需外部记忆），逼近带外部记忆的 Codex (GPT-5.5) 的 72.1%。",
+          en: "Investigates whether coding-agent post-training transfers to agentic robotics across heterogeneous harnesses (VLA skill invocation like RPent and control-code generation like CaP-X). Combines teacher-trajectory SFT with multi-turn RLOO RL via a Model-Call Proxy and lightweight harness adapters while keeping execution components frozen. On LIBERO-PRO, raises a 9B open planner from 18.1% to 71.0% without external memory, approaching Codex (GPT-5.5) at 72.1% with external memory."
+        },
+        simSummary: {
+          zh: "LIBERO-PRO: 9B 模型 18.1% → 71.0%（无外部记忆），逼近带记忆的 Codex (GPT-5.5) 72.1%",
+          en: "LIBERO-PRO: 9B planner 18.1% → 71.0% (no memory), approaching Codex (GPT-5.5) 72.1% with memory"
+        },
+        realSummary: {
+          zh: "验证跨 Harness 通用性（RPent VLA 适配器 + CaP-X 代码适配器）；暂未报告独立真机成功率",
+          en: "Validated across RPent (VLA) & CaP-X (code) harnesses; standalone real-robot benchmark not reported"
+        },
+        edgeSummary: {
+          zh: "工程解耦度高、无需外部记忆即可接近闭源模型；上限受限于所接入冻结执行器（VLA/原语）的能力",
+          en: "Clean harness decoupling & memory-free 9B performance; ceiling remains bounded by frozen execution components"
+        }
+      },
+      {
+        id: "unirobot",
+        color: "#6b7280",
+        colorSoft: "#f3f4f6",
+        shortName: "uni-robot-agent",
+        date: "2026-11-03",
+        org: "Open-RUA",
+        arxivId: "2611.01560",
+        arxivUrl: "https://arxiv.org/html/2611.01560v2",
+        githubUrl: "https://github.com/Open-RUA/uni-robot-agent",
+        projectUrl: "https://uni-robot-agent.com/",
+        figure: "assets/figures/fig_4.png",
+        trainCat: "harness",
+        actionCat: "hybrid",
+        title: {
+          zh: "uni-robot-agent：面向开源模型的统一模块化机器人 Harness",
+          en: "Democratizing Robot-Use Agents: A Unified Harness with Open Models"
+        },
+        briefLLM: { zh: "开源 Qwen3.8-Flash / DeepSeek-V4.1（开箱即用）", en: "Open Qwen3.8-Flash / DeepSeek-V4.1 (out-of-the-box)" },
+        briefAgent: { zh: "5 层统一 MCP/SDK 异步 Harness（零特权输入）", en: "5-layer unified MCP/SDK async harness (no privileged state)" },
+        briefRL: { zh: "本文无 RL（零样本评测，轨迹格式兼容后续 RL）", en: "No RL yet (zero-shot; trace format ready for future RL)" },
+        llm: {
+          zh: "开箱即用开源模型（Qwen3.8-Flash-Next、DeepSeek-V4.1-Flash）及闭源（GPT-6 Astra），本文未做 RL 训练",
+          en: "Out-of-the-box open models (Qwen3.8-Flash-Next, DeepSeek-V4.1-Flash) & GPT-6 Astra; no RL in this paper"
+        },
+        agent: {
+          zh: "5 层解耦架构（Agent → MCP/HTTP/SDK 编排与异步 ToolExecutor → 共享工具 → 领域服务 → 仿真/Pi05/SAM3 后端）",
+          en: "5-layer architecture (Agent → MCP/SDK Orchestration & async ToolExecutor → Shared Tools → Services → Backends)"
+        },
+        action: {
+          zh: "统一工具合约：GripperTools（运动/抓取/混合 actor_act）、SceneTools（观测/SAM3 定位）、SkillTools 与 EpisodeTools",
+          en: "Unified tool contracts: GripperTools (motion/grasp/hybrid actor_act), SceneTools (SAM3), SkillTools & EpisodeTools"
+        },
+        rl: {
+          zh: "无后训练（零样本评估）；统一交互轨迹格式专为后续跨环境 Agentic RL 训练铺路",
+          en: "Zero-shot (no training in paper); standardized interaction traces are explicitly designed to support future RUA training"
+        },
+        s2r: {
+          zh: "严格禁止特权仿真状态，仅用真实可获取的相机标定、RGB-D 与本体描述；同一套工具无缝对接仿真与双臂真机",
+          en: "Zero privileged simulator inputs; binds camera calibration, RGB-D & state into snapshots for seamless sim & real dual-arm use"
+        },
+        pipeline: {
+          zh: [
+            "观测快照绑定图像、相机标定与机械臂状态，避免状态不同步",
+            "开源/闭源 Agent 通过 MCP / SDK 发起异步工具调用（支持并发与取消）",
+            "Shared Tools 路由至 Environment / Actor (Pi05) / Perception (SAM3) 服务",
+            "返回可诊断的执行收据与结果图，模型推理与物理运动高度流水线重叠"
+          ],
+          en: [
+            "Observation snapshots bind images, camera calibration & arm state consistently",
+            "Agent issues async tool calls via MCP/SDK with exclusivity & cancellation",
+            "Shared Tools dispatch to Environment, Actor (Pi05) & Perception (SAM3) services",
+            "Returns diagnosable receipts & outcome frames; pipelines reasoning with motion"
+          ]
+        },
+        abstract: {
+          zh: "针对现有 RUA 过度依赖闭源前沿模型、制约学术界进一步训练研究的瓶颈，提出开源统一的五层模块化 Harness —— uni-robot-agent。在不使用任何仿真特权信息或闭源蒸馏的前提下，通过结构化标定信息、可靠工具接口、可诊断执行反馈及两级异步并发调度，开箱即用的开源模型 Qwen3.8-Flash-Next 在 RoboDojo 上取得 31.39 Score（25.00% SR），首次超越已发表的 GPT-6 Astra–RoboProbe（28.97 Score）；在 19 项真机桌面任务上取得 53.50 Score，超越 Dream-1（43.50）并与微调 π0.5（47.75）相当。论文进一步定位了影响 RUA 表现的四大核心通用能力：视觉理解、空间定位、几何编程与具身推理。",
+          en: "Introduces uni-robot-agent, a 5-layer unified modular harness enabling competitive open-weight robot use without privileged inputs or closed-model distillation. Out-of-the-box Qwen3.8-Flash-Next achieves 31.39 RoboDojo Score (25.00% SR), surpassing published GPT-6 Astra–RoboProbe (28.97 Score), and scores 53.50 on 19 real-world tabletop tasks (vs. Dream-1 43.50 and fine-tuned π0.5 47.75). Identifies four core general capabilities driving RUA performance: visual understanding, spatial grounding, geometric coding, and embodied reasoning."
+        },
+        simSummary: {
+          zh: "RoboDojo: Qwen3.8-Flash-Next 31.39 Score (25.00% SR) > GPT-6 Astra–RoboProbe 28.97 (22.48% SR)；DeepSeek-V4.1 27.11 Score",
+          en: "RoboDojo: Qwen3.8-Flash-Next 31.39 Score (25.00% SR) > GPT-6 Astra–RoboProbe 28.97 (22.48% SR); DeepSeek-V4.1 27.11"
+        },
+        realSummary: {
+          zh: "19 项双臂真机任务: Qwen3.8-Flash-Next 53.50 Score > Dream-1 (43.50) 与 10h/任务微调 π0.5 (47.75)",
+          en: "19 real dual-arm tasks: Qwen3.8-Flash-Next 53.50 Score > Dream-1 (43.50) & fine-tuned π0.5 (47.75)"
+        },
+        edgeSummary: {
+          zh: "证明好 Harness 可直接释放开源模型潜力且异步重叠 84.5–93.8% 运动时间；长程任务仍弱于专用机器人模型",
+          en: "Proves harness engineering unlocks open models & overlaps 84.5–93.8% motion time; still trails specialized policies on long-horizon tasks"
+        }
+      },
+      {
+        id: "captain",
+        color: "#6e1423",
+        colorSoft: "#f9eff1",
+        shortName: "CaPtain",
+        date: "2026-10-29",
+        org: "CUHK MMLab",
+        arxivId: "2610.40799",
+        arxivUrl: "https://arxiv.org/html/2610.40799",
+        githubUrl: "https://github.com/waltstephen/CaPtain",
+        projectUrl: "https://waltstephen.github.io/captain/",
+        figure: "assets/figures/fig_5.png",
+        trainCat: "rl",
+        actionCat: "code",
+        title: {
+          zh: "CaPtain：面向 Code-as-Policy 机器人智能体的后训练管线",
+          en: "CaPtain: A Pipeline for Post-Training Code-as-Policy Robot Agents"
+        },
+        briefLLM: { zh: "开源小模型 Qwen3.5-4B（纯本地端侧，无 VLA）", en: "Small open Qwen3.5-4B (local onboard, no VLA)" },
+        briefAgent: { zh: "22 个底层原语 + Python Cell 与物理收据闭环", en: "22 low-level primitives + Python cell & receipt loop" },
+        briefRL: { zh: "GPT-6 Astra 轨迹 SFT + 非对称物理 Critic 多轮 RL", en: "GPT-6 Astra SFT + asymmetric physical-critic RL" },
+        llm: {
+          zh: "开源小尺寸 VLM：Qwen3.5-4B → CaPtain-4B（纯本地 4B 模型，测试无 VLA/无闭源）",
+          en: "Small open VLM: Qwen3.5-4B → CaPtain-4B (local 4B model, no VLA or frontier model at test time)"
+        },
+        agent: {
+          zh: "CaPtain-Harness：多轮 Python Cell 执行循环（≤60 轮/Episode），每次调用返回结构化物理收据（位姿/接触力/停止原因）",
+          en: "CaPtain-Harness: multi-turn Python cell loop (≤60 req/ep) returning structured physical receipts (poses, forces, stop reason)"
+        },
+        action: {
+          zh: "22 个纯底层原语（SAM3/Molmo 感知、几何测量、受保护运动/夹爪），刻意剔除抓取/放置等高层技能与 VLA",
+          en: "22 low-level perception (SAM3/Molmo), geometry & guarded-motion primitives; explicitly no high-level grasp/place skills or VLA"
+        },
+        rl: {
+          zh: "Stage 1: GPT-6 Astra 合成轨迹 SFT；Stage 2: 多轮流式 RL + 非对称在线物理 Critic（读取策略不可见的特权仿真状态，对每轮请求精准信用分配），测试时移除 Critic",
+          en: "Stage 1: SFT on GPT-6 Astra synthetic episodes; Stage 2: Multi-turn streaming RL with asymmetric physical critic (reads privileged sim state hidden from policy for per-request credit); critic removed at test time"
+        },
+        s2r: {
+          zh: "同一套 22 原语 API 跨 5 大仿真器与真机一致；在粗略仿真孪生中适应后即可本地部署到真实机器人",
+          en: "Identical 22-primitive API across 5 simulators & physical hardware; deploys on real robot after coarse sim-twin adaptation"
+        },
+        pipeline: {
+          zh: [
+            "头部+腕部双相机图像、历史代码与上轮物理收据输入 Qwen3.5-4B",
+            "模型生成单步 Python Cell，组合感知/几何测量/运动底层 API",
+            "执行后返回精确坐标、运动距离、夹爪接触力（如 6.2 N）与新帧",
+            "训练期在线 Critic 读取仿真精确状态计算每步成功概率增量，指导策略更新"
+          ],
+          en: [
+            "Head & wrist images, past code & receipts fed into local Qwen3.5-4B",
+            "Policy emits a Python cell combining perception, geometry & motion APIs",
+            "Execution returns exact coordinates, gripper force (e.g. 6.2 N) & new images",
+            "Training-only physical critic reads exact sim state to assign per-request RL credit"
+          ]
+        },
+        abstract: {
+          zh: "提出面向 Code-as-Policy 机器人智能体的开源后训练管线 CaPtain，将 4B 开源小模型（Qwen3.5-4B）训练为无需 VLA、无需闭源模型、测试时无需特权状态的端侧机器人智能体。CaPtain-Harness 仅暴露 22 个底层感知、几何测量与受保护运动原语，每次调用返回物理收据。先用 GPT-6 Astra 合成轨迹进行 SFT，再针对多轮长程稀疏奖励信用分配难题，引入训练期专用的非对称物理 Critic（读取仿真特权状态并按每轮请求对成功概率的增量赋权）。Qwen3.5-4B 在未见 LIBERO 上从 0% 零样本经 SFT（55.4%）与 RL 跃升至 73.8%，在 LIBERO-PRO 达 78.5%，零样本 SimplerEnv WidowX 达 83.3%，并验证了粗略仿真适应后的真机部署。",
+          en: "Presents an open post-training pipeline turning a 4B open VLM (Qwen3.5-4B) into a local Code-as-Policy agent over 22 low-level perception, geometry, and guarded-motion primitives (no VLA or high-level skills). After SFT on GPT-6 Astra trajectories, multi-turn RL uses an asymmetric physical critic reading privileged simulator state to assign per-request credit; the critic is discarded at test time. Qwen3.5-4B rises from 0% zero-shot to 55.4% (SFT) and 73.8% (RL) on held-out LIBERO, reaches 78.5% on LIBERO-PRO, 83.3% zero-shot on SimplerEnv WidowX, and transfers to a real robot."
+        },
+        simSummary: {
+          zh: "LIBERO: 0% → 55.4% (SFT) → 73.8% (RL)；LIBERO-PRO: 78.5%（扰动套件 +17.6~21.2pt）；CaP-Bench: 75.0",
+          en: "LIBERO: 0% → 55.4% (SFT) → 73.8% (RL); LIBERO-PRO: 78.5% (+17.6–21.2pt on perturbations); CaP-Bench: 75.0"
+        },
+        realSummary: {
+          zh: "零样本 SimplerEnv WidowX: 83.3%；粗略仿真孪生适应后可跑真机；跨双臂迁移仍受限（RoboTwin 2.0: 22.6%, RoboDojo: 0.8%）",
+          en: "Zero-shot SimplerEnv WidowX: 83.3%; real robot via coarse sim-twin; dual-arm transfer limited (RoboTwin 2.0: 22.6%, RoboDojo: 0.8%)"
+        },
+        edgeSummary: {
+          zh: "仅 4B 参数即可在单臂操作与扰动鲁棒性上超越前沿模型；但跨双臂协同与陌生运动学泛化仍是短板",
+          en: "Only 4B params yet beats frontier models on single-arm & perturbation suites; struggles on unseen dual-arm kinematics"
+        }
+      },
+      {
+        id: "zap",
+        shortName: "ZAP",
+        color: "#8f3d4b",
+        colorSoft: "#faf0f2",
+        date: "2026-11-03",
+        org: "Luma AI",
+        arxivId: "2610.35817",
+        arxivUrl: "https://arxiv.org/abs/2610.35817",
+        githubUrl: null,
+        projectUrl: "https://zero-real.github.io/",
+        figure: "assets/figures/fig_6.png",
+        trainCat: "rl",
+        actionCat: "pose",
+        title: {
+          zh: "ZAP：预训练懂“做什么”，仿真教“怎么做”——具身智能体的组合泛化",
+          en: "Pretraining Knows What, Simulation Teaches How: Compositional Generalization for Agentic Robotics"
+        },
+        briefLLM: {
+          zh: "开源 Qwen3.6-27B（亦验证 Qwen3.5-9B），无需闭源教师蒸馏",
+          en: "Open Qwen3.6-27B (also Qwen3.5-9B), no frontier teacher distillation"
+        },
+        briefAgent: {
+          zh: "极简 5 工具 Harness（move_to/set_gripper + 后台 SAM 3.1 3D），无抓取宏",
+          en: "Minimal 5-tool harness (move_to/set_gripper + async SAM 3.1 3D), no grasp macros"
+        },
+        briefRL: {
+          zh: "40 个简单仿真任务：GRPO 热身 + 前缀树搜索自举 SFT + 稠密阶梯奖励 GRPO",
+          en: "40 simple sim tasks: GRPO warm-up + prefix-tree search SFT + dense-reward GRPO"
+        },
+        pipeline: {
+          zh: [
+            "顶视+双腕 3 路相机输入；后台异步运行 SAM 3.1 分割并结合深度计算 3D 质心、高度与主轴",
+            "预训练 VLM 负责语义推理（95% 场景规划正确），通过 update_todo 与 change_query 主动引导感知",
+            "调用 move_to（绝对 TCP 位姿 + 无奇异点槽偏航/倾角）与 set_gripper，控制器返回精确误差状态",
+            "Isaac Sim 40 简单任务：GRPO 热身 + 前缀树搜索挖成功轨迹 → 自举 SFT → 稠密阶梯奖励 GRPO"
+          ],
+          en: [
+            "Overhead + dual-wrist cameras; async background SAM 3.1 + depth yields 3D centroids, heights & axes",
+            "Pretrained VLM handles semantic reasoning (95% correct plans) via update_todo & change_query",
+            "Calls move_to (absolute TCP + singularity-free slot-yaw/tilt) & set_gripper with detailed feedback",
+            "40 simple Isaac Sim tasks: GRPO warm-up + prefix-tree search → self-distilled SFT → dense-reward GRPO"
+          ]
+        },
+        abstract: {
+          zh: "将机器人智能体策略解耦为“语义推理（知道做什么）”与“运动控制（知道怎么做）”两种可组合能力，发现开源小模型（Qwen3.6-27B）在预训练阶段已具备 95% 的语义规划能力，失败主因在于运动调用准确率仅 36%。为此提出 Zero-real Agent Policy (ZAP)：在不依赖闭源教师蒸馏、不使用任何真机数据的前提下，仅在 Isaac Sim 的 40 个简单基础任务中，通过极简 5 工具 Harness（无抓取宏）、GRPO 热身与前缀树搜索挖掘自身成功轨迹进行 SFT，再结合稠密阶梯奖励 GRPO 专攻运动控制。ZAP 在 30 次真实双臂任务上达 96.7%，追平同 Harness 下的 GPT-6 Astra 但快 3×、便宜 17×（$0.29 vs $4.87）；在双臂 RoboLab-120 上达 74.0%（GPT-6 Astra 72.2%），零样本迁移至未见单臂 Franka 达 55.9%，并在真机上零样本完成试管竖插、空中双臂交接、井字棋画 X 与国际象棋一步杀。",
+          en: "Factorizes robot agent policies into semantic reasoning ('what') and motion control ('how'), showing that open VLMs (Qwen3.6-27B) already plan correctly in 95% of scenes but succeed on only 36% of motion calls. Introduces Zero-real Agent Policy (ZAP), teaching only motion control in Isaac Sim on 40 simple tasks from the model's own rollouts (GRPO warm-up + prefix-tree search → self-seeded SFT → dense-reward GRPO) with a minimal 5-tool harness (no grasp macros, no frontier teacher, no real robot data). ZAP achieves 96.7% on real-world dual-arm tasks—matching GPT-6 Astra while running 3× faster (146s vs 397s) and 17× cheaper ($0.29 vs $4.87)—74.0% on bimanual RoboLab-120 (vs Astra 72.2%), 55.9% zero-shot on an unseen single-arm Franka, and zero-shot real-world test-tube insertion, mid-air handoff, tic-tac-toe, and chess mate-in-one."
+        },
+        simSummary: {
+          zh: "双臂 RoboLab-120: Base 8.3% → SFT 58.3% → GRPO 74.0%（追平 GPT-6 Astra 72.2%，超越 Opus 5.5 61.2%）",
+          en: "Bimanual RoboLab-120: Base 8.3% → SFT 58.3% → GRPO 74.0% (matches GPT-6 Astra 72.2%, beats Opus 5.5 61.2%)"
+        },
+        realSummary: {
+          zh: "双臂 YAM 真机 30 次试验: 16.7% → 96.7%（快 3×、便宜 17×）；零样本跨单臂 Franka: 55.9%（超越 Lakeside 51.0% / FLUX 3 42.9%）",
+          en: "Real bimanual YAM (30 trials): 16.7% → 96.7% (3× faster, 17× cheaper); Zero-shot single-arm Franka: 55.9% (beats Lakeside 51.0% / FLUX 3 42.9%)"
+        },
+        edgeSummary: {
+          zh: "零闭源蒸馏、零真机数据即实现强组合泛化（空中交接/下棋/画井字棋）；依赖后台深度+SAM 3.1 3D 测量与手动设计的稠密阶梯奖励",
+          en: "Zero teacher distillation & zero real data with strong compositional generalization (handoff/chess/tic-tac-toe); relies on calibrated depth + SAM 3.1 and shaped dense reward ladders"
+        }
+      }
+    ];
+
+    // =========================================================================
+    // 3. EFFICIENCY CARDS & MULTI-CHART ENGINE (100% GROUNDED DATA)
+    // =========================================================================
+    const EFFICIENCY_CARDS = [
+      {
+        paperId: "pear",
+        paper: "PEAR",
+        color: "#a31f34",
+        metric: "0% Drop",
+        title: { zh: "9 项通用基准零退化", en: "Zero Degradation on 9 Benchmarks" },
+        body: {
+          zh: "仿真 RURL 后训练在 AIME、GPQA、IFBench、LiveCode、RealWorldQA、ERQA、MMMU 及 MMMU-Pro S/V 上均无掉点。",
+          en: "Simulation RURL preserves full performance across AIME, GPQA, IFBench, LiveCode, RealWorldQA, ERQA, MMMU & MMMU-Pro S/V."
+        }
+      },
+      {
+        paperId: "pyrua",
+        paper: "PyRUA-REAL",
+        color: "#c85a53",
+        metric: "13.7m → 2.99m",
+        title: { zh: "固化部署提速 4.6×", en: "4.6× Faster Frozen Deployment" },
+        body: {
+          zh: "5 块积木堆叠离线程序无需在线思考，中位周期缩短 78.2%；BVJ 视频+关节轨迹反馈达 54.2% vs 基础报告 15.3%。",
+          en: "Offline frozen programs cut 5-block stacking cycle time by 78.2%; BVJ video+joint feedback hits 54.2% vs. 15.3% basic."
+        }
+      },
+      {
+        paperId: "agenticroborl",
+        paper: "AgenticRoboRL",
+        color: "#23272d",
+        metric: "18.1% → 71.0%",
+        title: { zh: "无外部记忆逼近闭源 Codex（跨 Harness 通用）", en: "Matches Closed Codex Without External Memory (Cross-Harness)" },
+        body: {
+          zh: "通过 Model-Call Proxy 与轻量 Harness 适配器解耦执行组件（兼容 RPent VLA 与 CaP-X 代码），9B 开源模型经教师 SFT + 多轮 RLOO 在 LIBERO-PRO 达 71.0%，无需外部记忆即逼近带记忆的 Codex GPT-5.5（72.1%）。",
+          en: "Decouples frozen executors (RPent VLA & CaP-X code) via a Model-Call Proxy and lightweight adapters; teacher SFT + multi-turn RLOO lifts a 9B open planner from 18.1% to 71.0% on LIBERO-PRO without external memory, approaching Codex GPT-5.5 (72.1% with memory)."
+        }
+      },
+      {
+        paperId: "unirobot",
+        paper: "uni-robot-agent",
+        color: "#6b7280",
+        metric: "84.5–93.8%",
+        title: { zh: "异步重叠与四大能力", en: "Async Overlap & 4 Core Skills" },
+        body: {
+          zh: "后台并发调度使推理重叠 84.5–93.8% 物理运动时间；揭示视觉理解、空间定位、几何编程、具身推理四大支柱。",
+          en: "Pipelined tool calls overlap 84.5–93.8% of motion time; links RUA success to vision, spatial grounding, geometric coding & reasoning."
+        }
+      },
+      {
+        paperId: "captain",
+        paper: "CaPtain",
+        color: "#6e1423",
+        metric: "+17.6 ~ 21.2pt",
+        title: { zh: "4B 端侧抗扰动增益", en: "4B Onboard Perturbation Gain" },
+        body: {
+          zh: "本地 4B 模型无 VLA 部署，训练期非对称物理 Critic 在三类扰动套件上稳定带来 +17.6 至 +21.2 点 RL 增益。",
+          en: "Local 4B model with no VLA; training-only physical critic yields +17.6 to +21.2 pt RL gains across three perturbation suites."
+        }
+      },
+      {
+        paperId: "zap",
+        paper: "ZAP",
+        color: "#8f3d4b",
+        metric: "3× Fast · 17× Cheap",
+        title: { zh: "无教师自举追平闭源真机 96.7%（成本降至 $0.29）", en: "Teacher-Free 96.7% Real Success at $0.29/Task" },
+        body: {
+          zh: "仅在 40 个简单仿真任务上自举训练，将 Qwen3.6-27B 运动调用准确率从 36% 提至 85%；真机与 GPT-6 Astra 同达 96.7%，耗时由 397s 降至 146s、单任务成本由 $4.87 降至 $0.29。",
+          en: "Bootstrapped from 40 simple sim tasks with zero teacher distillation, lifting valid motion calls from 36% to 85%; matches GPT-6 Astra at 96.7% real success while cutting time (397s→146s) and cost ($4.87→$0.29)."
+        }
+      }
+    ];
+
+    // =========================================================================
+    // 4. APPLICATION STATE
+    // =========================================================================
+    const CHART_ORDER = ["libero", "robodojo", "transfer", "mechanism"];
+
+    const state = {
+      lang: "zh",
+      activePaper: "pear",      // Part 1 paper switcher
+      focusPaper: "all",        // Part 2 color legend filter
+      activeChart: "libero",    // Part 2 chart switcher
+      c2Mode: "sr",             // Chart 2 sub-mode: "sr" | "score"
+      c4Mode: "ablation",       // Chart 4 sub-mode
+      activeHighlight: "pear",  // Part 2 5-paper highlight switcher
+      activeSummary: "pear",    // Part 2 5-paper empirical summary switcher
+      openCards: {},
+      openFigs: {},
+      openAbs: {}
+    };
+
+    let mainChartInstance = null;
+
+    const PAPER_COLOR = {
+      pear: "#a31f34",
+      pyrua: "#c85a53",
+      agenticroborl: "#23272d",
+      unirobot: "#6b7280",
+      captain: "#6e1423",
+      zap: "#8f3d4b"
+    };
+
+    function hexWithAlpha(hex, alphaHex) {
+      return hex + alphaHex;
+    }
+
+    function barColorFor(paperId) {
+      const base = PAPER_COLOR[paperId] || "#a31f34";
+      if (state.focusPaper === "all" || state.focusPaper === paperId) return base;
+      return hexWithAlpha(base, "33"); // dim unfocused papers smoothly
+    }
+
+    function refColorFor(paperId, defaultHex) {
+      if (state.focusPaper === "all" || state.focusPaper === paperId) return defaultHex;
+      return "#eceef1";
+    }
+
+    // =========================================================================
+    // 5. RENDER FUNCTIONS
+    // =========================================================================
+    function t(key) {
+      return (I18N[state.lang] && I18N[state.lang][key]) || key;
+    }
+
+    function applyStaticI18n() {
+      document.documentElement.lang = state.lang === "zh" ? "zh-CN" : "en";
+      document.querySelectorAll("[data-i18n]").forEach((el) => {
+        const key = el.getAttribute("data-i18n");
+        el.textContent = t(key);
+      });
+
+      const zhBtn = document.getElementById("lang-zh");
+      const enBtn = document.getElementById("lang-en");
+      if (state.lang === "zh") {
+        zhBtn.className = "px-2.5 py-1 text-xs font-semibold rounded-md transition-colors bg-[#181a1d] text-white";
+        enBtn.className = "px-2.5 py-1 text-xs font-semibold rounded-md transition-colors text-[#565c66] hover:text-[#181a1d]";
+      } else {
+        enBtn.className = "px-2.5 py-1 text-xs font-semibold rounded-md transition-colors bg-[#181a1d] text-white";
+        zhBtn.className = "px-2.5 py-1 text-xs font-semibold rounded-md transition-colors text-[#565c66] hover:text-[#181a1d]";
+      }
+    }
+
+    function renderCombinedPapers() {
+      const tabsEl = document.getElementById("paper-switcher-tabs");
+      const activeIdx = Math.max(0, PAPERS.findIndex((x) => x.id === state.activePaper));
+      const p = PAPERS[activeIdx];
+
+      document.getElementById("paper-page-ind").textContent = `${activeIdx + 1} / ${PAPERS.length}`;
+
+      tabsEl.innerHTML = PAPERS.map((item, i) => {
+        const isActive = item.id === p.id;
+        return `
+          <button type="button" data-paper-tab="${item.id}" class="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all inline-flex items-center gap-1.5 ${isActive ? "bg-white text-[#181a1d] shadow-sm" : "bg-transparent border-transparent text-[#565c66] hover:bg-[#eceef1] hover:text-[#181a1d]"}" style="${isActive ? `border-color:${item.color}` : ""}">
+            <span class="w-2 h-2 rounded-full inline-block shrink-0" style="background:${item.color}"></span>
+            <span class="font-mono-code text-[10px] opacity-70">0${i + 1}</span>
+            <span>${item.shortName}</span>
+          </button>
+        `;
+      }).join("");
+
+      const container = document.getElementById("paper-combined-list");
+      const stepLabels = [t("step_input"), t("step_reason"), t("step_act"), t("step_update")];
+      const isCardOpen = !!state.openCards[p.id];
+      const isFigOpen = !!state.openFigs[p.id];
+      const isAbsOpen = !!state.openAbs[p.id];
+      const steps = p.pipeline[state.lang];
+
+      container.innerHTML = `
+        <article id="deep-${p.id}">
+          <div class="p-4 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div class="min-w-0 flex-1">
+              <div class="flex flex-wrap items-center gap-2 mb-3">
+                <span class="text-[11px] font-mono-code font-bold px-2.5 py-0.5 rounded text-white inline-flex items-center gap-1.5" style="background:${p.color}">0${activeIdx + 1} · ${p.shortName}</span>
+                <span class="text-xs font-mono-code text-[#565c66]">${p.org} · ${p.date}</span>
+                <span class="text-[#d0d4dc] hidden sm:inline">|</span>
+                <div class="flex flex-wrap items-center gap-1.5 text-[11px] font-mono-code">
+                  <a href="${p.arxivUrl}" target="_blank" rel="noopener noreferrer" class="px-2 py-0.5 rounded bg-[#f6f7f8] border border-[#e4e6ea] text-[#181a1d] hover:border-[#a31f34] hover:text-[#a31f34]">arXiv:${p.arxivId} ↗</a>
+                  ${p.githubUrl ? `<a href="${p.githubUrl}" target="_blank" rel="noopener noreferrer" class="px-2 py-0.5 rounded bg-[#f6f7f8] border border-[#e4e6ea] text-[#565c66] hover:text-[#181a1d]">GitHub ↗</a>` : ""}
+                  ${p.projectUrl ? `<a href="${p.projectUrl}" target="_blank" rel="noopener noreferrer" class="px-2 py-0.5 rounded bg-[#f6f7f8] border border-[#e4e6ea] text-[#565c66] hover:text-[#181a1d]">Page ↗</a>` : ""}
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs">
+                <div class="bg-[#f6f7f8] rounded-lg px-3.5 py-2.5 border border-[#eef0f3]">
+                  <div class="font-mono-code text-[10px] font-bold uppercase text-[#181a1d] mb-1">LLM</div>
+                  <div class="text-[#3f444c] leading-relaxed">${p.briefLLM[state.lang]}</div>
+                </div>
+                <div class="bg-[#f6f7f8] rounded-lg px-3.5 py-2.5 border border-[#eef0f3]">
+                  <div class="font-mono-code text-[10px] font-bold uppercase text-[#a31f34] mb-1">Agent</div>
+                  <div class="text-[#3f444c] leading-relaxed">${p.briefAgent[state.lang]}</div>
+                </div>
+                <div class="bg-[#f6f7f8] rounded-lg px-3.5 py-2.5 border border-[#eef0f3]">
+                  <div class="font-mono-code text-[10px] font-bold uppercase text-[#3f444c] mb-1">RL</div>
+                  <div class="text-[#3f444c] leading-relaxed">${p.briefRL[state.lang]}</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 shrink-0">
+              <button type="button" data-toggle-card="${p.id}" class="px-4 py-2 rounded-lg text-xs font-semibold border transition-colors inline-flex items-center gap-1.5 ${isCardOpen ? "bg-[#181a1d] text-white border-[#181a1d]" : "bg-[#fbf1f3] text-[#a31f34] border-[#e7c2c8] hover:bg-[#a31f34] hover:text-white"}">
+                <span>${isCardOpen ? t("btn_collapse_detail") : t("btn_expand_detail")}</span>
+                <span class="text-[10px]">${isCardOpen ? "▲" : "▼"}</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="collapsible-content ${isCardOpen ? "open" : ""} border-t border-[#e4e6ea] bg-[#f6f7f8] p-4 sm:p-6">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+              <h4 class="text-sm sm:text-base font-bold text-[#181a1d]">${p.title[state.lang]}</h4>
+              <div class="flex flex-wrap items-center gap-2 shrink-0">
+                <button type="button" data-toggle-abs="${p.id}" class="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${isAbsOpen ? "bg-[#181a1d] text-white border-[#181a1d]" : "bg-white text-[#3f444c] border-[#d0d4dc] hover:border-[#181a1d]"}">
+                  ${isAbsOpen ? t("btn_hide_abs") : t("btn_show_abs")}
+                </button>
+                <button type="button" data-toggle-fig="${p.id}" class="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${isFigOpen ? "bg-[#a31f34] text-white border-[#a31f34]" : "bg-[#fbf1f3] text-[#a31f34] border-[#e7c2c8] hover:bg-[#a31f34] hover:text-white"}">
+                  ${isFigOpen ? t("btn_hide_fig") : t("btn_show_fig")}
+                </button>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+              ${steps.map((txt, i) => `
+                <div class="bento-white p-3.5">
+                  <div class="text-[11px] font-mono-code font-semibold ${i === 1 ? "text-[#a31f34]" : "text-[#848b96]"} mb-1">0${i + 1} · ${stepLabels[i]}</div>
+                  <p class="text-xs text-[#3f444c] leading-relaxed">${txt}</p>
+                </div>
+              `).join("")}
+            </div>
+
+            <div class="collapsible-content ${isAbsOpen ? "open" : ""} mt-4 bento-white p-4 border-l-4" style="border-left-color:${p.color}">
+              <div class="text-[11px] font-mono-code font-semibold uppercase text-[#848b96] mb-1">Abstract</div>
+              <p class="text-xs sm:text-[13px] text-[#3f444c] leading-relaxed">${p.abstract[state.lang]}</p>
+            </div>
+
+            <div class="collapsible-content ${isFigOpen ? "open" : ""} mt-4 bento-white p-4">
+              <div class="flex items-center justify-between gap-2 mb-3">
+                <span class="text-xs font-mono-code font-semibold text-[#565c66]">${p.shortName} · Architecture Overview (PDF Figure)</span>
+                <button type="button" data-zoom-fig="${p.id}" class="px-2.5 py-1 rounded-md text-xs font-semibold bg-[#f6f7f8] border border-[#d0d4dc] text-[#181a1d] hover:border-[#a31f34] hover:text-[#a31f34] transition-colors">
+                  ${t("btn_zoom")} ⤢
+                </button>
+              </div>
+              <div class="bg-white rounded-lg border border-[#eef0f3] p-2 flex justify-center">
+                <img src="${p.figure}" alt="${p.shortName} Architecture" data-zoom-fig="${p.id}" class="max-w-full h-auto max-h-[420px] object-contain cursor-zoom-in rounded" />
+              </div>
+            </div>
+          </div>
+        </article>
+      `;
+    }
+
+    function renderColorLegend() {
+      const el = document.getElementById("paper-color-legend");
+      const allActive = state.focusPaper === "all";
+      const pills = [
+        `<button type="button" data-focus-paper="all" class="px-2.5 py-1 rounded-full text-xs font-semibold border transition-colors ${allActive ? "bg-[#181a1d] text-white border-[#181a1d]" : "bg-white text-[#565c66] border-[#d0d4dc] hover:border-[#181a1d]"}">${t("legend_all")}</button>`
+      ];
+      PAPERS.forEach((p) => {
+        const active = state.focusPaper === p.id;
+        pills.push(`
+          <button type="button" data-focus-paper="${p.id}" class="px-2.5 py-1 rounded-full text-xs font-semibold border transition-all inline-flex items-center gap-1.5 ${active ? "text-white shadow-sm" : "bg-white text-[#3f444c] border-[#d0d4dc] hover:border-[#181a1d]"}" style="${active ? `background:${p.color};border-color:${p.color}` : ""}">
+            <span class="w-2.5 h-2.5 rounded-full inline-block" style="background:${active ? "#ffffff" : p.color}"></span>
+            <span>${p.shortName}</span>
+          </button>
+        `);
+      });
+      el.innerHTML = pills.join("");
+    }
+
+    // Custom Chart.js plugin: draws crisp direct value labels at the tip of every horizontal bar
+    const directValueLabelsPlugin = {
+      id: "directValueLabels",
+      afterDatasetsDraw(chart) {
+        const { ctx } = chart;
+        ctx.save();
+        ctx.font = "600 11px 'JetBrains Mono', ui-monospace, monospace";
+        ctx.textBaseline = "middle";
+        ctx.textAlign = "left";
+
+        chart.data.datasets.forEach((dataset, dsIndex) => {
+          const meta = chart.getDatasetMeta(dsIndex);
+          if (meta.hidden) return;
+          meta.data.forEach((bar, index) => {
+            const raw = dataset.data[index];
+            if (raw === null || raw === undefined) return;
+            const customLabels = dataset.valueLabels;
+            const text = (customLabels && customLabels[index]) ? customLabels[index] : `${raw}%`;
+            const isDim = dataset.isRef ? true : false;
+            ctx.fillStyle = isDim ? "#6b7280" : "#181a1d";
+            ctx.fillText(text, bar.x + 8, bar.y);
+          });
+        });
+        ctx.restore();
+      }
+    };
+
+    function horizontalChartOptions(maxVal, showLegend, unitSuffix) {
+      return {
+        indexAxis: "y",
+        responsive: true,
+        maintainAspectRatio: false,
+        layout: {
+          padding: { top: 4, right: 86, bottom: 4, left: 4 }
+        },
+        plugins: {
+          legend: {
+            display: showLegend,
+            position: "top",
+            align: "start",
+            labels: {
+              boxWidth: 11,
+              boxHeight: 11,
+              padding: 14,
+              color: "#3f444c",
+              font: { size: 11.5, weight: "600", family: "Inter, 'Noto Sans SC', sans-serif" }
+            }
+          },
+          tooltip: {
+            backgroundColor: "#181a1d",
+            titleColor: "#ffffff",
+            bodyColor: "#e4e6ea",
+            padding: 10,
+            cornerRadius: 8,
+            callbacks: {
+              label(ctx) {
+                const v = ctx.parsed.x;
+                if (v === null || v === undefined) return "";
+                const custom = ctx.dataset.valueLabels && ctx.dataset.valueLabels[ctx.dataIndex];
+                return ` ${ctx.dataset.label}: ${custom || (v + (unitSuffix || ""))}`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            beginAtZero: true,
+            max: maxVal,
+            grid: { color: "#eef0f3", drawBorder: false },
+            border: { display: false },
+            ticks: {
+              color: "#848b96",
+              font: { size: 10.5, family: "'JetBrains Mono', monospace" },
+              callback: (v) => unitSuffix ? `${v}${unitSuffix}` : v
+            }
+          },
+          y: {
+            grid: { display: false },
+            border: { color: "#e4e6ea" },
+            ticks: {
+              color: "#181a1d",
+              font: { size: 11.5, weight: "500", family: "Inter, 'Noto Sans SC', sans-serif" },
+              padding: 6
+            }
+          }
+        }
+      };
+    }
+
+    function renderRefStrip(items) {
+      const strip = document.getElementById("chart-ref-strip");
+      if (!items || items.length === 0) {
+        strip.classList.add("hidden");
+        strip.innerHTML = "";
+        return;
+      }
+      strip.classList.remove("hidden");
+      strip.innerHTML = items.map((it) => `
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-mono-code bg-[#f6f7f8] border border-[#e4e6ea] text-[#3f444c]">
+          <span class="w-2 h-2 rounded-full inline-block" style="background:${it.color || "#6b7280"}"></span>
+          <span class="text-[#565c66]">${it.label}:</span>
+          <strong class="text-[#181a1d]">${it.val}</strong>
+        </span>
+      `).join("");
+    }
+
+    function renderActiveChart() {
+      const zh = state.lang === "zh";
+      const key = state.activeChart;
+      const idx = CHART_ORDER.indexOf(key);
+
+      document.querySelectorAll("[data-chart-tab]").forEach((btn) => {
+        btn.classList.toggle("active", btn.getAttribute("data-chart-tab") === key);
+      });
+      document.getElementById("chart-page-ind").textContent = `${idx + 1} / ${CHART_ORDER.length}`;
+
+      document.getElementById("c2-sub-toggle").classList.toggle("hidden", key !== "robodojo");
+      document.getElementById("c4-sub-toggle").classList.toggle("hidden", key !== "mechanism");
+
+      const tagEl = document.getElementById("active-chart-tag");
+      const titleEl = document.getElementById("active-chart-title");
+      const subEl = document.getElementById("active-chart-sub");
+      const unitEl = document.getElementById("active-chart-unit");
+      const noteEl = document.getElementById("active-chart-note");
+
+      const ctx = document.getElementById("mainResultsChart").getContext("2d");
+      if (mainChartInstance) mainChartInstance.destroy();
+
+      // Closed-source bar helper: stays crisp dark-slate unless user focuses a specific open paper
+      const closedColor = (relatedPaperId) => {
+        if (state.focusPaper === "all" || state.focusPaper === relatedPaperId) return "#525866";
+        return "#e5e7eb";
+      };
+
+      if (key === "libero") {
+        tagEl.textContent = "FIG 2.1 · SIMULATION BENCHMARKS (OPEN RUA vs. CLOSED FRONTIER)";
+        tagEl.style.color = "#a31f34";
+        titleEl.textContent = zh
+          ? "仿真基准直面对比：开源 RUA 后训练 vs. 闭源前沿模型（GPT / Claude / Codex）"
+          : "Simulation Head-to-Head: Open RUA Post-Training vs. Closed Frontier (GPT / Claude / Codex)";
+        subEl.textContent = zh
+          ? "LIBERO、LIBERO-PRO 与 RoboLab-120 成功率对比"
+          : "Success rates across LIBERO, LIBERO-PRO, and RoboLab-120";
+        unitEl.textContent = "Success Rate (%)";
+        noteEl.textContent = zh
+          ? "注：各开源 RUA 基座零样本起点分别为 PEAR 1.6%、CaPtain-4B 0.0%、AgenticRoboRL 9B 18.1%、ZAP 27B 8.3%；PEAR 在 LIBERO-Pro 新指令任务达 57.4%（微调 π0.5 仅 0.75%）。"
+          : "Note: Base zero-shot starting points are PEAR 1.6%, CaPtain-4B 0.0%, AgenticRoboRL 9B 18.1%, ZAP 27B 8.3%; PEAR achieves 57.4% on novel LIBERO-Pro instructions (vs π0.5 0.75%).";
+
+        const rows = [
+          { lblZh: "[LIBERO] GPT-6 Astra (max) · 闭源", lblEn: "[LIBERO] GPT-6 Astra (max) · Closed", val: 80.6, txt: "80.6%", color: closedColor("pear"), isRef: true },
+          { lblZh: "[LIBERO] GPT-6.1 Sol (max) · 闭源", lblEn: "[LIBERO] GPT-6.1 Sol (max) · Closed", val: 76.2, txt: "76.2%", color: closedColor("pear"), isRef: true },
+          { lblZh: "[LIBERO] PEAR (27B · RURL)", lblEn: "[LIBERO] PEAR (27B · RURL)", val: 74.4, txt: "74.4% (Base 1.6%)", color: barColorFor("pear"), isRef: false },
+          { lblZh: "[LIBERO] CaPtain (4B · SFT+RL)", lblEn: "[LIBERO] CaPtain (4B · SFT+RL)", val: 73.8, txt: "73.8% (Base 0.0%)", color: barColorFor("captain"), isRef: false },
+          { lblZh: "[LIBERO-PRO] CaPtain (4B · SFT+RL)", lblEn: "[LIBERO-PRO] CaPtain (4B · SFT+RL)", val: 78.5, txt: "78.5%", color: barColorFor("captain"), isRef: false },
+          { lblZh: "[LIBERO-PRO] Codex GPT-5.5 (带记忆) · 闭源", lblEn: "[LIBERO-PRO] Codex GPT-5.5 (w/ mem) · Closed", val: 72.1, txt: "72.1%", color: closedColor("agenticroborl"), isRef: true },
+          { lblZh: "[LIBERO-PRO] AgenticRoboRL (9B · 无记忆)", lblEn: "[LIBERO-PRO] AgenticRoboRL (9B · no mem)", val: 71.0, txt: "71.0% (Base 18.1%)", color: barColorFor("agenticroborl"), isRef: false },
+          { lblZh: "[LIBERO-PRO] PEAR (27B · 未见扰动)", lblEn: "[LIBERO-PRO] PEAR (27B · unseen)", val: 62.1, txt: "62.1% (π0.5 53.3%)", color: barColorFor("pear"), isRef: false },
+          { lblZh: "[RoboLab-120] ZAP (27B · GRPO)", lblEn: "[RoboLab-120] ZAP (27B · GRPO)", val: 74.0, txt: "74.0% (Base 8.3%)", color: barColorFor("zap"), isRef: false },
+          { lblZh: "[RoboLab-120] GPT-6 Astra · 闭源", lblEn: "[RoboLab-120] GPT-6 Astra · Closed", val: 72.2, txt: "72.2%", color: closedColor("zap"), isRef: true },
+          { lblZh: "[RoboLab-120] Claude Opus 5.5 · 闭源", lblEn: "[RoboLab-120] Claude Opus 5.5 · Closed", val: 61.2, txt: "61.2%", color: closedColor("zap"), isRef: true }
+        ];
+
+        mainChartInstance = new Chart(ctx, {
+          type: "bar",
+          plugins: [directValueLabelsPlugin],
+          data: {
+            labels: rows.map((r) => zh ? r.lblZh : r.lblEn),
+            datasets: [
+              {
+                label: "Success Rate (%)",
+                data: rows.map((r) => r.val),
+                valueLabels: rows.map((r) => r.txt),
+                backgroundColor: rows.map((r) => r.color),
+                borderRadius: 4,
+                barThickness: 20
+              }
+            ]
+          },
+          options: horizontalChartOptions(105, false, "%")
+        });
+
+        renderRefStrip([
+          { label: zh ? "LIBERO 中等推理闭源" : "LIBERO Med-Effort Closed", val: "GPT-6 Astra med 49.3% / Sol med 48.1%", color: "#525866" },
+          { label: zh ? "新指令遵循 (同场景换任务)" : "Novel Instruction Following", val: "PEAR 57.4% vs π0.5 0.75%", color: "#a31f34" }
+        ]);
+      } else if (key === "robodojo") {
+        const isSR = state.c2Mode === "sr";
+        tagEl.textContent = isSR ? "FIG 2.2 · ROBODOJO (SUCCESS RATE %)" : "FIG 2.2 · ROBODOJO (OFFICIAL SCORE)";
+        tagEl.style.color = "#c85a53";
+        titleEl.textContent = t("c2_title");
+        subEl.textContent = t("c2_sub");
+        unitEl.textContent = isSR ? "Success Rate (%)" : "Benchmark Score";
+        noteEl.textContent = t("c2_note");
+
+        document.getElementById("c2-mode-sr").className = isSR
+          ? "px-2.5 py-1 text-[11px] font-semibold rounded-md bg-[#181a1d] text-white"
+          : "px-2.5 py-1 text-[11px] font-semibold rounded-md text-[#565c66] hover:text-[#181a1d]";
+        document.getElementById("c2-mode-score").className = !isSR
+          ? "px-2.5 py-1 text-[11px] font-semibold rounded-md bg-[#181a1d] text-white"
+          : "px-2.5 py-1 text-[11px] font-semibold rounded-md text-[#565c66] hover:text-[#181a1d]";
+
+        if (isSR) {
+          const rows = [
+            { lblZh: "PyRUA-REAL (GPT-6 Astra RSI) · 42任务总均", lblEn: "PyRUA-REAL (GPT-6 Astra RSI) · 42-Task Avg", val: 84.42, txt: "84.4%", color: barColorFor("pyrua") },
+            { lblZh: "PyRUA-REAL · 精度 Precision", lblEn: "PyRUA-REAL · Precision", val: 74.00, txt: "74.0%", color: barColorFor("pyrua") },
+            { lblZh: "PyRUA-REAL · 长程 Long-Horizon", lblEn: "PyRUA-REAL · Long-Horizon", val: 56.00, txt: "56.0%", color: barColorFor("pyrua") },
+            { lblZh: "PyRUA-Lean (GPT-6 Astra 交互代码) · 闭源", lblEn: "PyRUA-Lean (GPT-6 Astra Interactive) · Closed", val: 50.35, txt: "50.4%", color: closedColor("pyrua") },
+            { lblZh: "uni-robot · Qwen3.8-Flash (开源零样本)", lblEn: "uni-robot · Qwen3.8-Flash (Open Zero-Shot)", val: 25.00, txt: "25.0%", color: barColorFor("unirobot") },
+            { lblZh: "GPT-6 Astra–RoboProbe (零样本) · 闭源", lblEn: "GPT-6 Astra–RoboProbe (Zero-Shot) · Closed", val: 22.48, txt: "22.5%", color: closedColor("unirobot") },
+            { lblZh: "uni-robot · DeepSeek-V4.1 (开源零样本)", lblEn: "uni-robot · DeepSeek-V4.1 (Open Zero-Shot)", val: 21.39, txt: "21.4%", color: barColorFor("unirobot") },
+            { lblZh: "CaPtain-4B · 跨双臂零样本迁移", lblEn: "CaPtain-4B · Cross-Dual Zero-Shot", val: 0.8, txt: "0.8%", color: barColorFor("captain") }
+          ];
+          mainChartInstance = new Chart(ctx, {
+            type: "bar",
+            plugins: [directValueLabelsPlugin],
+            data: {
+              labels: rows.map((r) => zh ? r.lblZh : r.lblEn),
+              datasets: [
+                {
+                  label: "Success Rate (%)",
+                  data: rows.map((r) => r.val),
+                  valueLabels: rows.map((r) => r.txt),
+                  backgroundColor: rows.map((r) => r.color),
+                  borderRadius: 4,
+                  barThickness: 24
+                }
+              ]
+            },
+            options: horizontalChartOptions(100, false, "%")
+          });
+          renderRefStrip([
+            { label: zh ? "PyRUA-REAL 泛化维度" : "PyRUA-REAL Generalization", val: "41.17% vs Lean 43.17%", color: "#c85a53" },
+            { label: zh ? "切换至 GAP Harness 掉点" : "Switching to GAP Harness", val: "-8.89% SR / -10.38 Score", color: "#6b7280" }
+          ]);
+        } else {
+          const rows = [
+            { lblZh: "PyRUA-Lean (GPT-6 Astra) · 闭源", lblEn: "PyRUA-Lean (GPT-6 Astra) · Closed", val: 58.20, txt: "58.20", color: closedColor("pyrua") },
+            { lblZh: "uni-robot · Qwen3.8-Flash (开源零样本)", lblEn: "uni-robot · Qwen3.8-Flash (Open Zero-Shot)", val: 31.39, txt: "31.39 (Open #1)", color: barColorFor("unirobot") },
+            { lblZh: "GPT-6 Astra–RoboProbe (零样本) · 闭源", lblEn: "GPT-6 Astra–RoboProbe (Zero-Shot) · Closed", val: 28.97, txt: "28.97", color: closedColor("unirobot") },
+            { lblZh: "uni-robot · DeepSeek-V4.1 (开源零样本)", lblEn: "uni-robot · DeepSeek-V4.1 (Open Zero-Shot)", val: 27.11, txt: "27.11", color: barColorFor("unirobot") }
+          ];
+          mainChartInstance = new Chart(ctx, {
+            type: "bar",
+            plugins: [directValueLabelsPlugin],
+            data: {
+              labels: rows.map((r) => zh ? r.lblZh : r.lblEn),
+              datasets: [
+                {
+                  label: "RoboDojo Score",
+                  data: rows.map((r) => r.val),
+                  valueLabels: rows.map((r) => r.txt),
+                  backgroundColor: rows.map((r) => r.color),
+                  borderRadius: 4,
+                  barThickness: 30
+                }
+              ]
+            },
+            options: horizontalChartOptions(70, false, "")
+          });
+          renderRefStrip([
+            { label: zh ? "里程碑" : "Milestone", val: zh ? "开源零样本 Qwen3.8 (31.39) 首次超越闭源 Astra–RoboProbe (28.97)" : "Open Qwen3.8 (31.39) surpasses closed Astra–RoboProbe (28.97)", color: "#6b7280" }
+          ]);
+        }
+      } else if (key === "transfer") {
+        tagEl.textContent = "FIG 2.3 · REAL-WORLD & CROSS-EMBODIMENT TRANSFER";
+        tagEl.style.color = "#6e1423";
+        titleEl.textContent = zh
+          ? "真机部署与跨本体迁移：开源 RUA vs. 闭源 GPT-6 Astra & VLA"
+          : "Real-World & Cross-Embodiment Transfer: Open RUA vs. GPT-6 Astra & VLAs";
+        subEl.textContent = t("c3_sub");
+        unitEl.textContent = "Success Rate (%)";
+        noteEl.textContent = t("c3_note");
+
+        const rows = [
+          { lblZh: "[真机 YAM] ZAP (27B · 纯仿真零样本)", lblEn: "[Real YAM] ZAP (27B · Zero-Shot Sim→Real)", val: 96.7, txt: "96.7% (Base 16.7%)", color: barColorFor("zap") },
+          { lblZh: "[真机 YAM] GPT-6 Astra (ZAP Harness) · 闭源", lblEn: "[Real YAM] GPT-6 Astra (ZAP Harness) · Closed", val: 96.7, txt: "96.7% ($4.87/task)", color: closedColor("zap") },
+          { lblZh: "[真机 8任务] PyRUA-REAL (GPT-6 Astra RSI)", lblEn: "[Real 8-Task] PyRUA-REAL (GPT-6 Astra RSI)", val: 91.1, txt: "91.1% (7/8离线)", color: barColorFor("pyrua") },
+          { lblZh: "[SimplerEnv] CaPtain (4B · 单臂零样本)", lblEn: "[SimplerEnv] CaPtain (4B · Zero-Shot)", val: 83.3, txt: "83.3%", color: barColorFor("captain") },
+          { lblZh: "[真机 YAM] PEAR (27B · 纯仿真零样本)", lblEn: "[Real YAM] PEAR (27B · Zero-Shot Sim→Real)", val: 60.0, txt: "60.0% (Base 0.0%)", color: barColorFor("pear") },
+          { lblZh: "[跨单臂 Franka] ZAP (27B · 未见本体)", lblEn: "[Unseen Franka] ZAP (27B · Zero-Shot)", val: 55.9, txt: "55.9% (Lakeside 51%)", color: barColorFor("zap") },
+          { lblZh: "[未见 LIBERO-Long] PEAR (27B)", lblEn: "[Unseen LIBERO-Long] PEAR (27B)", val: 39.0, txt: "39.0% (Base 0.4%)", color: barColorFor("pear") },
+          { lblZh: "[真机 YAM] GPT-6 Astra (Robocurve) · 闭源", lblEn: "[Real YAM] GPT-6 Astra (Robocurve) · Closed", val: 36.7, txt: "36.7%", color: closedColor("zap") },
+          { lblZh: "[真机 YAM] MolmoAct2 (VLA 基线)", lblEn: "[Real YAM] MolmoAct2 (VLA Baseline)", val: 33.3, txt: "33.3%", color: refColorFor("zap", "#d4d8df") },
+          { lblZh: "[RoboTwin 2.0] CaPtain (4B · 跨双臂)", lblEn: "[RoboTwin 2.0] CaPtain (4B · Dual-Arm)", val: 22.6, txt: "22.6%", color: barColorFor("captain") }
+        ];
+
+        mainChartInstance = new Chart(ctx, {
+          type: "bar",
+          plugins: [directValueLabelsPlugin],
+          data: {
+            labels: rows.map((r) => zh ? r.lblZh : r.lblEn),
+            datasets: [
+              {
+                label: "Success Rate (%)",
+                data: rows.map((r) => r.val),
+                valueLabels: rows.map((r) => r.txt),
+                backgroundColor: rows.map((r) => r.color),
+                borderRadius: 4,
+                barThickness: 20
+              }
+            ]
+          },
+          options: horizontalChartOptions(110, false, "%")
+        });
+
+        renderRefStrip([
+          { label: zh ? "uni-robot-agent 19项真机 Score" : "uni-robot-agent 19 Real Tasks Score", val: "Qwen3.8 53.50 vs π0.5 47.75 / Dream-1 43.50", color: "#6b7280" },
+          { label: zh ? "PEAR 新本体 RoboDojo 抓取" : "PEAR New Robot Pickup", val: "10.7% → 39.9%", color: "#a31f34" }
+        ]);
+      } else {
+        const isAbl = state.c4Mode === "ablation";
+        tagEl.textContent = isAbl ? "FIG 2.4 · DIAGNOSTICS & HARNESS ABLATIONS" : "FIG 2.4 · EFFICIENCY & COST SAVINGS vs. CLOSED MODELS";
+        tagEl.style.color = "#23272d";
+        titleEl.textContent = isAbl ? t("c4_title_a") : t("c4_title_b");
+        subEl.textContent = isAbl ? t("c4_sub_a") : t("c4_sub_b");
+        unitEl.textContent = isAbl ? "Success / Accuracy (%)" : "Savings / Overlap (%)";
+        noteEl.textContent = isAbl ? t("c4_note_a") : t("c4_note_b");
+
+        document.getElementById("c4-mode-ablation").className = isAbl
+          ? "px-2.5 py-1 text-[11px] font-semibold rounded-md bg-[#181a1d] text-white"
+          : "px-2.5 py-1 text-[11px] font-semibold rounded-md text-[#565c66] hover:text-[#181a1d]";
+        document.getElementById("c4-mode-efficiency").className = !isAbl
+          ? "px-2.5 py-1 text-[11px] font-semibold rounded-md bg-[#181a1d] text-white"
+          : "px-2.5 py-1 text-[11px] font-semibold rounded-md text-[#565c66] hover:text-[#181a1d]";
+
+        if (isAbl) {
+          const rows = [
+            { lblZh: "GPT-6 Astra (ZAP Harness · 真机) · 闭源", lblEn: "GPT-6 Astra (ZAP Harness · Real) · Closed", val: 96.7, txt: "96.7%", color: closedColor("zap") },
+            { lblZh: "GPT-6 Astra (Robocurve · 真机) · 闭源", lblEn: "GPT-6 Astra (Robocurve · Real) · Closed", val: 36.7, txt: "36.7% (Harness 差 60pt)", color: "#9ca3af" },
+            { lblZh: "ZAP · 有效运动调用率 (GRPO 后)", lblEn: "ZAP · Valid Motion Calls (Post-GRPO)", val: 85.0, txt: "85.0% (+49pt)", color: barColorFor("zap") },
+            { lblZh: "ZAP · 有效运动调用率 (Base 27B)", lblEn: "ZAP · Valid Motion Calls (Base 27B)", val: 36.0, txt: "36.0%", color: refColorFor("zap", "#d4d8df") },
+            { lblZh: "ZAP · SFT 轨迹挖掘 (3.9k 条)", lblEn: "ZAP · SFT Mining (3.9k traces)", val: 58.3, txt: "58.3% (+41.1pt)", color: barColorFor("zap") },
+            { lblZh: "ZAP · SFT 轨迹挖掘 (455 条)", lblEn: "ZAP · SFT Mining (455 traces)", val: 17.2, txt: "17.2%", color: refColorFor("zap", "#d4d8df") },
+            { lblZh: "PyRUA-REAL · 视频+关节反馈 (BVJ)", lblEn: "PyRUA-REAL · Video+Joint (BVJ)", val: 54.2, txt: "54.2%", color: barColorFor("pyrua") },
+            { lblZh: "PyRUA-REAL · 特权数值反馈 (BS)", lblEn: "PyRUA-REAL · Numeric State (BS)", val: 45.8, txt: "45.8%", color: refColorFor("pyrua", "#9ca3af") },
+            { lblZh: "PyRUA-REAL · 基础文本报告 (B)", lblEn: "PyRUA-REAL · Basic Outcome (B)", val: 15.3, txt: "15.3%", color: refColorFor("pyrua", "#d4d8df") }
+          ];
+          mainChartInstance = new Chart(ctx, {
+            type: "bar",
+            plugins: [directValueLabelsPlugin],
+            data: {
+              labels: rows.map((r) => zh ? r.lblZh : r.lblEn),
+              datasets: [
+                {
+                  label: "%",
+                  data: rows.map((r) => r.val),
+                  valueLabels: rows.map((r) => r.txt),
+                  backgroundColor: rows.map((r) => r.color),
+                  borderRadius: 4,
+                  barThickness: 20
+                }
+              ]
+            },
+            options: horizontalChartOptions(112, false, "%")
+          });
+          renderRefStrip([
+            { label: "CaPtain-4B · CaP-Bench", val: "75.0", color: "#6e1423" },
+            { label: zh ? "PEAR 9 项通用基准" : "PEAR 9 General Benchmarks", val: zh ? "0% 掉点" : "0% Degradation", color: "#a31f34" }
+          ]);
+        } else {
+          const rows = [
+            { lblZh: "ZAP vs. GPT-6 Astra · 单任务成本降幅", lblEn: "ZAP vs. GPT-6 Astra · Cost Reduction", val: 94.0, txt: "-94.0% ($4.87→$0.29)", color: barColorFor("zap") },
+            { lblZh: "uni-robot · 异步流水线运动重叠率", lblEn: "uni-robot · Async Motion Overlap", val: 93.8, txt: "84.5–93.8%", color: barColorFor("unirobot") },
+            { lblZh: "PyRUA-REAL · 离线固化程序耗时降幅", lblEn: "PyRUA-REAL · Offline Cycle Speedup", val: 78.2, txt: "-78.2% (13.7→2.99m)", color: barColorFor("pyrua") },
+            { lblZh: "PyRUA-Lean (GPT-6 Astra) · Token 节省", lblEn: "PyRUA-Lean (GPT-6 Astra) · Token Saved", val: 65.0, txt: "-65.0%", color: closedColor("pyrua") },
+            { lblZh: "ZAP vs. GPT-6 Astra · 单任务耗时降幅", lblEn: "ZAP vs. GPT-6 Astra · Latency Reduction", val: 63.2, txt: "-63.2% (397→146s)", color: barColorFor("zap") },
+            { lblZh: "PyRUA-Lean (GPT-6 Astra) · 调用次数节省", lblEn: "PyRUA-Lean (GPT-6 Astra) · Calls Saved", val: 49.0, txt: "-49.0%", color: closedColor("pyrua") },
+            { lblZh: "CaPtain-4B · 扰动套件 RL 净增益", lblEn: "CaPtain-4B · Perturbation RL Gain", val: 21.2, txt: "+17.6 ~ 21.2 pt", color: barColorFor("captain") }
+          ];
+          mainChartInstance = new Chart(ctx, {
+            type: "bar",
+            plugins: [directValueLabelsPlugin],
+            data: {
+              labels: rows.map((r) => zh ? r.lblZh : r.lblEn),
+              datasets: [
+                {
+                  label: "%",
+                  data: rows.map((r) => r.val),
+                  valueLabels: rows.map((r) => r.txt),
+                  backgroundColor: rows.map((r) => r.color),
+                  borderRadius: 4,
+                  barThickness: 22
+                }
+              ]
+            },
+            options: horizontalChartOptions(115, false, "%")
+          });
+          renderRefStrip([
+            { label: zh ? "ZAP vs 闭源 GPT-6 Astra" : "ZAP vs Closed GPT-6 Astra", val: "3× Faster · 17× Cheaper", color: "#8f3d4b" },
+            { label: zh ? "PyRUA-REAL 离线部署" : "PyRUA-REAL Frozen Deploy", val: "4.6× Faster (2.99 min/cycle)", color: "#c85a53" }
+          ]);
+        }
+      }
+    }
+
+    function renderPaperTabsHtml(activeId, dataAttr) {
+      return PAPERS.map((item, i) => {
+        const isActive = item.id === activeId;
+        return `
+          <button type="button" ${dataAttr}="${item.id}" class="px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all inline-flex items-center gap-1.5 ${isActive ? "bg-white text-[#181a1d] shadow-sm" : "bg-transparent border-transparent text-[#565c66] hover:bg-[#eceef1] hover:text-[#181a1d]"}" style="${isActive ? `border-color:${item.color}` : ""}">
+            <span class="w-2 h-2 rounded-full inline-block shrink-0" style="background:${item.color}"></span>
+            <span class="font-mono-code text-[10px] opacity-70">0${i + 1}</span>
+            <span>${item.shortName}</span>
+          </button>
+        `;
+      }).join("");
+    }
+
+    function renderEfficiencyCards() {
+      const idx = Math.max(0, EFFICIENCY_CARDS.findIndex((c) => c.paperId === state.activeHighlight));
+      const c = EFFICIENCY_CARDS[idx];
+      const paper = PAPERS.find((p) => p.id === c.paperId);
+
+      document.getElementById("highlight-switcher-tabs").innerHTML = renderPaperTabsHtml(c.paperId, "data-hl-tab");
+      document.getElementById("highlight-page-ind").textContent = `${idx + 1} / ${EFFICIENCY_CARDS.length}`;
+
+      const effPanel = document.getElementById("efficiency-panel");
+      effPanel.innerHTML = `
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div class="min-w-0 flex-1">
+            <div class="flex flex-wrap items-center gap-2.5 mb-2">
+              <span class="text-xs font-mono-code font-bold px-2.5 py-0.5 rounded text-white" style="background:${c.color}">0${idx + 1} · ${c.paper}</span>
+              <span class="text-xs font-mono-code text-[#848b96]">${paper ? paper.org : ""} · arXiv:${paper ? paper.arxivId : ""}</span>
+            </div>
+            <h4 class="text-base sm:text-lg font-bold text-[#181a1d] mb-1.5">${c.title[state.lang]}</h4>
+            <p class="text-xs sm:text-sm text-[#565c66] leading-relaxed max-w-4xl">${c.body[state.lang]}</p>
+          </div>
+          <div class="bento-card px-5 py-4 shrink-0 text-left md:text-right border-l-4 md:border-l md:border-r-4" style="border-color:${c.color}">
+            <div class="text-[10px] font-mono-code uppercase tracking-wider text-[#848b96] mb-1">KEY METRIC</div>
+            <div class="text-xl sm:text-2xl font-mono-code font-bold" style="color:${c.color}">${c.metric}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderResultsTable() {
+      const idx = Math.max(0, PAPERS.findIndex((p) => p.id === state.activeSummary));
+      const p = PAPERS[idx];
+
+      document.getElementById("summary-switcher-tabs").innerHTML = renderPaperTabsHtml(p.id, "data-sum-tab");
+      document.getElementById("summary-page-ind").textContent = `${idx + 1} / ${PAPERS.length}`;
+
+      const container = document.getElementById("results-summary-body");
+      container.innerHTML = `
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div class="flex flex-wrap items-center gap-2.5">
+            <span class="text-xs font-mono-code font-bold px-2.5 py-0.5 rounded text-white" style="background:${p.color}">0${idx + 1} · ${p.shortName}</span>
+            <span class="text-xs font-mono-code text-[#565c66]">${p.org} · ${p.date}</span>
+            <a href="${p.arxivUrl}" target="_blank" rel="noopener noreferrer" class="text-xs font-mono-code text-[#a31f34] hover:underline">arXiv:${p.arxivId} ↗</a>
+          </div>
+          <a href="#paper-stage-section" data-jump-paper="${p.id}" class="text-xs font-mono-code font-semibold text-[#565c66] hover:text-[#a31f34] transition-colors">${t("jump_detail")}</a>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+          <div class="bento-card p-4">
+            <div class="text-[11px] font-mono-code font-semibold uppercase text-[#848b96] mb-1.5">${t("rcol_sim")}</div>
+            <p class="text-xs sm:text-[13px] text-[#181a1d] leading-relaxed">${p.simSummary[state.lang]}</p>
+          </div>
+          <div class="bento-card p-4">
+            <div class="text-[11px] font-mono-code font-semibold uppercase text-[#a31f34] mb-1.5">${t("rcol_real")}</div>
+            <p class="text-xs sm:text-[13px] text-[#181a1d] leading-relaxed">${p.realSummary[state.lang]}</p>
+          </div>
+          <div class="bento-card p-4">
+            <div class="text-[11px] font-mono-code font-semibold uppercase text-[#565c66] mb-1.5">${t("rcol_edge")}</div>
+            <p class="text-xs sm:text-[13px] text-[#3f444c] leading-relaxed">${p.edgeSummary[state.lang]}</p>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderAll() {
+      applyStaticI18n();
+      renderCombinedPapers();
+      renderColorLegend();
+      renderActiveChart();
+      renderEfficiencyCards();
+      renderResultsTable();
+    }
+
+    // =========================================================================
+    // 6. EVENT LISTENERS & INTERACTIONS
+    // =========================================================================
+    document.getElementById("lang-zh").addEventListener("click", () => {
+      if (state.lang !== "zh") { state.lang = "zh"; renderAll(); }
+    });
+    document.getElementById("lang-en").addEventListener("click", () => {
+      if (state.lang !== "en") { state.lang = "en"; renderAll(); }
+    });
+
+    document.getElementById("mobile-menu-btn").addEventListener("click", () => {
+      document.getElementById("mobile-nav").classList.toggle("hidden");
+    });
+
+    document.querySelectorAll("#mobile-nav a").forEach((a) => {
+      a.addEventListener("click", () => {
+        document.getElementById("mobile-nav").classList.add("hidden");
+      });
+    });
+
+    // Part 1 Paper Switcher Tabs + Prev / Next
+    document.getElementById("paper-switcher-tabs").addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-paper-tab]");
+      if (!btn) return;
+      const nextId = btn.getAttribute("data-paper-tab");
+      if (state.activePaper !== nextId) {
+        state.activePaper = nextId;
+        renderCombinedPapers();
+      }
+    });
+    document.getElementById("paper-prev-btn").addEventListener("click", () => {
+      const idx = Math.max(0, PAPERS.findIndex((p) => p.id === state.activePaper));
+      state.activePaper = PAPERS[(idx - 1 + PAPERS.length) % PAPERS.length].id;
+      renderCombinedPapers();
+    });
+    document.getElementById("paper-next-btn").addEventListener("click", () => {
+      const idx = Math.max(0, PAPERS.findIndex((p) => p.id === state.activePaper));
+      state.activePaper = PAPERS[(idx + 1) % PAPERS.length].id;
+      renderCombinedPapers();
+    });
+
+    // Delegated clicks for per-paper Expand / Abstract / Figure / Lightbox
+    document.getElementById("paper-combined-list").addEventListener("click", (e) => {
+      const cardBtn = e.target.closest("[data-toggle-card]");
+      if (cardBtn) {
+        const id = cardBtn.getAttribute("data-toggle-card");
+        state.openCards[id] = !state.openCards[id];
+        renderCombinedPapers();
+        return;
+      }
+      const figBtn = e.target.closest("[data-toggle-fig]");
+      if (figBtn) {
+        const id = figBtn.getAttribute("data-toggle-fig");
+        state.openFigs[id] = !state.openFigs[id];
+        renderCombinedPapers();
+        return;
+      }
+      const absBtn = e.target.closest("[data-toggle-abs]");
+      if (absBtn) {
+        const id = absBtn.getAttribute("data-toggle-abs");
+        state.openAbs[id] = !state.openAbs[id];
+        renderCombinedPapers();
+        return;
+      }
+      const zoomEl = e.target.closest("[data-zoom-fig]");
+      if (zoomEl) {
+        const id = zoomEl.getAttribute("data-zoom-fig");
+        const paper = PAPERS.find((p) => p.id === id);
+        if (paper) openLightbox(paper);
+      }
+    });
+
+    // Interactive Paper Color Legend Filter (highlights one paper in charts & syncs lower switchers)
+    document.getElementById("paper-color-legend").addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-focus-paper]");
+      if (!btn) return;
+      const target = btn.getAttribute("data-focus-paper");
+      state.focusPaper = (state.focusPaper === target && target !== "all") ? "all" : target;
+      if (state.focusPaper !== "all") {
+        state.activeHighlight = state.focusPaper;
+        state.activeSummary = state.focusPaper;
+      }
+      renderColorLegend();
+      renderActiveChart();
+      renderEfficiencyCards();
+      renderResultsTable();
+    });
+
+    // 5-Paper Highlight Switcher Tabs + Prev / Next
+    document.getElementById("highlight-switcher-tabs").addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-hl-tab]");
+      if (!btn) return;
+      state.activeHighlight = btn.getAttribute("data-hl-tab");
+      renderEfficiencyCards();
+    });
+    document.getElementById("highlight-prev-btn").addEventListener("click", () => {
+      const idx = Math.max(0, EFFICIENCY_CARDS.findIndex((c) => c.paperId === state.activeHighlight));
+      state.activeHighlight = EFFICIENCY_CARDS[(idx - 1 + EFFICIENCY_CARDS.length) % EFFICIENCY_CARDS.length].paperId;
+      renderEfficiencyCards();
+    });
+    document.getElementById("highlight-next-btn").addEventListener("click", () => {
+      const idx = Math.max(0, EFFICIENCY_CARDS.findIndex((c) => c.paperId === state.activeHighlight));
+      state.activeHighlight = EFFICIENCY_CARDS[(idx + 1) % EFFICIENCY_CARDS.length].paperId;
+      renderEfficiencyCards();
+    });
+
+    // 5-Paper Empirical Summary Switcher Tabs + Prev / Next
+    document.getElementById("summary-switcher-tabs").addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-sum-tab]");
+      if (!btn) return;
+      state.activeSummary = btn.getAttribute("data-sum-tab");
+      renderResultsTable();
+    });
+    document.getElementById("summary-prev-btn").addEventListener("click", () => {
+      const idx = Math.max(0, PAPERS.findIndex((p) => p.id === state.activeSummary));
+      state.activeSummary = PAPERS[(idx - 1 + PAPERS.length) % PAPERS.length].id;
+      renderResultsTable();
+    });
+    document.getElementById("summary-next-btn").addEventListener("click", () => {
+      const idx = Math.max(0, PAPERS.findIndex((p) => p.id === state.activeSummary));
+      state.activeSummary = PAPERS[(idx + 1) % PAPERS.length].id;
+      renderResultsTable();
+    });
+
+    // Single-Stage Chart Switcher Tabs + Prev / Next Controls
+    document.getElementById("chart-switcher").addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-chart-tab]");
+      if (!btn) return;
+      const next = btn.getAttribute("data-chart-tab");
+      if (state.activeChart !== next) {
+        state.activeChart = next;
+        renderActiveChart();
+      }
+    });
+    document.getElementById("chart-prev-btn").addEventListener("click", () => {
+      const idx = CHART_ORDER.indexOf(state.activeChart);
+      state.activeChart = CHART_ORDER[(idx - 1 + CHART_ORDER.length) % CHART_ORDER.length];
+      renderActiveChart();
+    });
+    document.getElementById("chart-next-btn").addEventListener("click", () => {
+      const idx = CHART_ORDER.indexOf(state.activeChart);
+      state.activeChart = CHART_ORDER[(idx + 1) % CHART_ORDER.length];
+      renderActiveChart();
+    });
+
+    // Chart 2 Mode Switch (SR% vs Score)
+    document.getElementById("c2-mode-sr").addEventListener("click", () => {
+      if (state.c2Mode !== "sr") { state.c2Mode = "sr"; renderActiveChart(); }
+    });
+    document.getElementById("c2-mode-score").addEventListener("click", () => {
+      if (state.c2Mode !== "score") { state.c2Mode = "score"; renderActiveChart(); }
+    });
+
+    // Chart 4 Mode Switch
+    document.getElementById("c4-mode-ablation").addEventListener("click", () => {
+      if (state.c4Mode !== "ablation") { state.c4Mode = "ablation"; renderActiveChart(); }
+    });
+    document.getElementById("c4-mode-efficiency").addEventListener("click", () => {
+      if (state.c4Mode !== "efficiency") { state.c4Mode = "efficiency"; renderActiveChart(); }
+    });
+
+    // Clicking a paper name in the Results Table switches Part 1 to that paper & auto-expands it
+    document.getElementById("results-summary-body").addEventListener("click", (e) => {
+      const link = e.target.closest("[data-jump-paper]");
+      if (link) {
+        e.preventDefault();
+        const id = link.getAttribute("data-jump-paper");
+        state.activePaper = id;
+        state.openCards[id] = true;
+        renderCombinedPapers();
+        document.getElementById("paper-stage-section").scrollIntoView({ behavior: "smooth" });
+      }
+    });
+
+    // Lightbox Modal
+    function openLightbox(paper) {
+      document.getElementById("lightbox-title").textContent = paper.shortName;
+      document.getElementById("lightbox-sub").textContent = paper.title[state.lang];
+      document.getElementById("lightbox-img").src = paper.figure;
+      document.getElementById("lightbox-modal").classList.remove("hidden");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeLightbox() {
+      document.getElementById("lightbox-modal").classList.add("hidden");
+      document.body.style.overflow = "";
+    }
+
+    function openOurFigureLightbox() {
+      document.getElementById("lightbox-title").textContent = state.lang === "zh" ? "我们的研究框架草图" : "Our Proposed Framework Sketch";
+      document.getElementById("lightbox-sub").textContent = t("p3_fig_title");
+      document.getElementById("lightbox-img").src = document.getElementById("our-pipeline-img").src;
+      document.getElementById("lightbox-modal").classList.remove("hidden");
+      document.body.style.overflow = "hidden";
+    }
+    document.getElementById("zoom-our-fig-btn").addEventListener("click", openOurFigureLightbox);
+    document.getElementById("our-pipeline-img").addEventListener("click", openOurFigureLightbox);
+
+    document.getElementById("lightbox-close").addEventListener("click", closeLightbox);
+    document.getElementById("lightbox-modal").addEventListener("click", (e) => {
+      if (e.target.id === "lightbox-modal") closeLightbox();
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeLightbox();
+    });
+
+    // Initial render
+    renderAll();
+  </script>
+</body>
+</html>
